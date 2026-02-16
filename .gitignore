@@ -1,0 +1,110 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Byte-compiled / optimized
+*.pyc
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+ENV/
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Mac
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Data
+data/raw/
+data/processed/
+data/vector_db/
+
+# ChromaDB persistence
+data/vector_db/
+
+# Secrets and env
+.env
+*.env
+secrets.json
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS files
+Thumbs.db
+
+# Coverage
+.coverage
+.coverage.*
+
+# Docker
+docker-compose.override.yml
+
+# Local notebooks and caches
+.cache/
+
+# GitHub Actions artifacts
+*.zip
+
+# Ignore large files
+*.pdf
+*.xlsx
+
+# Allow explicit exceptions in repo if needed
+# !data/processed/analysis_results.json
+
+# Sensitive keys, credentials, and local secrets
+*.pem
+*.key
+*.p12
+*.jks
+*.crt
+credentials.json
+secret-*.json
+
+# Local database files and model weights
+*.sqlite
+*.sqlite3
+*.db
+*.h5
+*.pt
+*.ckpt
+*.bin
+models/
+weights/
+checkpoints/
+snapshots/
+
+# Local env overrides
+.env.local
+.env.*.local
+.secrets
+
+## Project proposals and local run scripts (do not publish)
+proposal_direct_application.txt
+proposal_mext_version.txt
+research_proposal.txt
+runcmds.txt
+
+research_proposal.txt
+runcmds.txt

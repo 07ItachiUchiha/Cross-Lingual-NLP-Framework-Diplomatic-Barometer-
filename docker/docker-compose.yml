@@ -1,0 +1,70 @@
+# ──────────────────────────────────────────────────────────────────────
+# Diplomatic Barometer — Docker Compose
+# ──────────────────────────────────────────────────────────────────────
+# Services:
+#   api        — FastAPI backend  (port 8000)
+#   dashboard  — Streamlit UI     (port 8501)
+#   chromadb   — Vector database  (port 8100)
+#
+# Usage:
+#   docker compose up --build
+#   docker compose up -d          # detached
+#   docker compose down
+# ──────────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+services:
+  # ── ChromaDB — persistent vector store ─────────────────────────────
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8100:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ── FastAPI Backend ────────────────────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data:/app/data
+    environment:
+      - LLM_BACKEND=${LLM_BACKEND:-none}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - EMBEDDING_BACKEND=${EMBEDDING_BACKEND:-sentence-transformers}
+      - CHROMA_PERSIST_DIR=/app/data/vector_db
+    depends_on:
+      chromadb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Streamlit Dashboard ────────────────────────────────────────────
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ../data:/app/data
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  chroma_data:

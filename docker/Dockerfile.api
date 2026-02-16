@@ -1,0 +1,38 @@
+# ── Stage 1: Build ───────────────────────────────────────────────────
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ── Stage 2: Runtime ─────────────────────────────────────────────────
+FROM python:3.11-slim
+
+LABEL maintainer="diplomatic-barometer"
+LABEL description="FastAPI backend for Geopolitical Insight Engine"
+
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /install /usr/local
+
+# Copy application code
+COPY . .
+
+# Create data directories
+RUN mkdir -p /app/data/vector_db /app/data/reports /app/data/processed /app/logs
+
+# Environment defaults
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    LLM_BACKEND=none \
+    EMBEDDING_BACKEND=sentence-transformers \
+    CHROMA_PERSIST_DIR=/app/data/vector_db
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
