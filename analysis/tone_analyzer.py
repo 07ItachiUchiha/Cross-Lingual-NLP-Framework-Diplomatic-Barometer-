@@ -1,10 +1,27 @@
-"""Sentiment polarity + urgency scoring for diplomatic text"""
+"""Sentiment polarity + urgency scoring for diplomatic text.
+
+This is a heuristic module (pre-RAG). For better behavior on non-consumer text,
+polarity uses NLTK VADER when available, with TextBlob kept as a fallback.
+"""
 
 import pandas as pd
 from typing import Dict, List
 import logging
 from textblob import TextBlob
 import re
+
+try:
+    from nltk.sentiment import SentimentIntensityAnalyzer
+    import nltk
+
+    _VADER_AVAILABLE = True
+    try:
+        nltk.data.find('sentiment/vader_lexicon.zip')
+    except LookupError:
+        nltk.download('vader_lexicon')
+except Exception:  # pragma: no cover
+    SentimentIntensityAnalyzer = None
+    _VADER_AVAILABLE = False
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,16 +38,31 @@ class UrgencyDetector:
     @staticmethod
     def extract_modal_verbs(text: str) -> Dict[str, int]:
         """Extract and count modal verbs"""
-        text_lower = text.lower()
-        
-        urgent_count = sum(1 for modal in UrgencyDetector.URGENT_MODALS if modal in text_lower)
-        moderate_count = sum(1 for modal in UrgencyDetector.MODERATE_MODALS if modal in text_lower)
-        cautious_count = sum(1 for modal in UrgencyDetector.CAUTIOUS_MODALS if modal in text_lower)
+        text_lower = str(text or "").lower()
+
+        # Count occurrences using word-boundary regex to avoid substring false positives.
+        def count_any(words: set[str]) -> int:
+            total = 0
+            for w in words:
+                w2 = re.escape(str(w))
+                total += len(re.findall(rf"\b{w2}\b", text_lower))
+            return int(total)
+
+        urgent_count = count_any(UrgencyDetector.URGENT_MODALS)
+        moderate_count = count_any(UrgencyDetector.MODERATE_MODALS)
+        cautious_count = count_any(UrgencyDetector.CAUTIOUS_MODALS)
+
+        # Negated urgent modals (e.g., "must not", "shall not") reduce urgency.
+        negated_urgent = 0
+        for w in UrgencyDetector.URGENT_MODALS:
+            w2 = re.escape(str(w))
+            negated_urgent += len(re.findall(rf"\b{w2}\b\s+not\b", text_lower))
         
         return {
             'urgent_modals': urgent_count,
             'moderate_modals': moderate_count,
-            'cautious_modals': cautious_count
+            'cautious_modals': cautious_count,
+            'negated_urgent_modals': int(negated_urgent),
         }
     
     @staticmethod
@@ -42,16 +74,14 @@ class UrgencyDetector:
         """
         modals = UrgencyDetector.extract_modal_verbs(text)
         
-        total_modals = sum(modals.values())
+        total_modals = modals['urgent_modals'] + modals['moderate_modals'] + modals['cautious_modals']
         if total_modals == 0:
             return 0.5  # Neutral
         
         # Weighted urgency calculation
-        urgency_value = (
-            modals['urgent_modals'] * 1.0 +
-            modals['moderate_modals'] * 0.6 +
-            modals['cautious_modals'] * 0.2
-        )
+        # Penalize negated-urgent occurrences.
+        urgent_effective = max(0.0, float(modals['urgent_modals'] - modals.get('negated_urgent_modals', 0)))
+        urgency_value = (urgent_effective * 1.0) + (modals['moderate_modals'] * 0.6) + (modals['cautious_modals'] * 0.2)
         
         # Normalize to 0-1 range
         urgency_score = min(urgency_value / total_modals, 1.0)
@@ -61,6 +91,14 @@ class UrgencyDetector:
 
 class SentimentAnalyzer:
     """Analyze sentiment and tone in diplomatic documents"""
+
+    def __init__(self):
+        self._vader = None
+        if _VADER_AVAILABLE and SentimentIntensityAnalyzer is not None:
+            try:
+                self._vader = SentimentIntensityAnalyzer()
+            except Exception:
+                self._vader = None
     
     @staticmethod
     def analyze_sentiment(text: str) -> Dict:
@@ -73,11 +111,26 @@ class SentimentAnalyzer:
         if not isinstance(text, str) or len(text) == 0:
             return {'polarity': 0.0, 'subjectivity': 0.0}
         
-        blob = TextBlob(text)
-        
+        # Polarity: prefer VADER when available (better behaved on neutral/formal text)
+        polarity = 0.0
+        if _VADER_AVAILABLE and SentimentIntensityAnalyzer is not None:
+            try:
+                vader = SentimentIntensityAnalyzer()
+                polarity = float(vader.polarity_scores(text).get('compound', 0.0))
+            except Exception:
+                polarity = 0.0
+
+        # Subjectivity: TextBlob proxy (optional). If TextBlob behaves poorly, treat as neutral.
+        subjectivity = 0.0
+        try:
+            blob = TextBlob(text)
+            subjectivity = float(blob.sentiment.subjectivity)
+        except Exception:
+            subjectivity = 0.0
+
         return {
-            'polarity': blob.sentiment.polarity,  # -1 (negative) to 1 (positive)
-            'subjectivity': blob.sentiment.subjectivity  # 0 (objective) to 1 (subjective)
+            'polarity': polarity,  # -1 (negative) to 1 (positive)
+            'subjectivity': subjectivity,  # 0 (objective) to 1 (subjective)
         }
     
     @staticmethod

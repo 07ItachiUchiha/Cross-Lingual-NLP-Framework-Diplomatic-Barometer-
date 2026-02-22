@@ -31,7 +31,15 @@ class CountryPairDataLoader:
     def get_cache_path(self, country_pair: Tuple[str, str]) -> Path:
         """Get cache file path for a country pair"""
         pair_name = f"{country_pair[0]}_{country_pair[1]}"
-        return self.cache_dir / f"{pair_name}_documents.csv"
+        default_path = self.cache_dir / f"{pair_name}_documents.csv"
+
+        # Prefer canonical enriched corpus when available (keeps original raw file untouched)
+        if pair_name == "india_japan":
+            canonical = self.cache_dir / "india_japan_documents_canonical.csv"
+            if canonical.exists():
+                return canonical
+
+        return default_path
     
     def load_country_pair_data(self,
                                country_pair: Tuple[str, str],
@@ -43,7 +51,7 @@ class CountryPairDataLoader:
         Priority:
         1. Check cache (use if available and use_cache=True)
         2. Try to scrape real data
-        3. Fall back to sample data
+        3. Fail fast if real data is unavailable
         
         Args:
             country_pair: Tuple of (country1, country2)
@@ -80,9 +88,10 @@ class CountryPairDataLoader:
                 logger.warning(f"Failed to cache data: {str(e)}")
             return df
         
-        # Fall back to sample data
-        logger.warning(f"Real data unavailable, using sample data for {country_pair}")
-        return self._get_sample_data_for_pair(country_pair)
+        raise RuntimeError(
+            f"No real data available for {country_pair}. "
+            "Please provide cached CSV or ensure crawlers return real documents."
+        )
     
     def _scrape_country_pair(self, country_pair: Tuple[str, str]) -> Optional[pd.DataFrame]:
         """
@@ -125,19 +134,6 @@ class CountryPairDataLoader:
             logger.error(f"Error loading data for {country_pair}: {str(e)}")
             return None
     
-    def _get_sample_data_for_pair(self, country_pair: Tuple[str, str]) -> pd.DataFrame:
-        """Get sample data (stub for now, returns generic sample)"""
-        loader = DataLoader()
-        df = loader.load_sample_data()
-        
-        # Add country pair metadata
-        df['country_pair'] = f"{country_pair[0]}-{country_pair[1]}"
-        df['country1'] = country_pair[0]
-        df['country2'] = country_pair[1]
-        
-        return df
-
-
 class DashboardDataManager:
     """Manages data loading for the dashboard"""
     
@@ -166,8 +162,7 @@ class DashboardDataManager:
                 available.append(pair)
         
         if not available:
-            logger.info("No cached data found, all pairs will use sample data")
-            available = COUNTRY_PAIRS
+            logger.info("No cached data found for any country pair")
         
         return available
 

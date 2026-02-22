@@ -9,10 +9,10 @@ import pandas as pd
 class TestDataLoader:
     """Test the DataLoader class"""
 
-    def test_load_sample_data_returns_dataframe(self, sample_df):
+    def test_load_real_data_returns_dataframe(self, sample_df):
         assert isinstance(sample_df, pd.DataFrame)
 
-    def test_sample_data_has_50_plus_documents(self, sample_df):
+    def test_real_data_has_50_plus_documents(self, sample_df):
         assert len(sample_df) >= 50, f"Expected 50+ documents, got {len(sample_df)}"
 
     def test_required_columns_exist(self, sample_df):
@@ -45,11 +45,36 @@ class TestDataLoader:
     def test_dates_are_datetime(self, sample_df):
         assert pd.api.types.is_datetime64_any_dtype(sample_df['date'])
 
-    def test_load_combined_data_fallback(self):
-        """When no CSV files exist, load_combined_data should fall back to sample data"""
+    def test_load_combined_data_uses_real_csv(self, tmp_path, monkeypatch):
+        """load_combined_data should load from validated real CSV data.
+
+        Uses a temp corpus so the test runs in a clean clone.
+        """
+
+        import pandas as pd
         from scrapers.data_loader import DataLoader
+
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+
+        rows = []
+        for year in range(2000, 2025):
+            for source in ("MEA", "MOFA"):
+                rows.append(
+                    {
+                        "date": f"{year}-01-01",
+                        "title": f"{source} Document {year}",
+                        "location": "Test Location",
+                        "signatories": "Test Signatory",
+                        "content": "Trade and investment with maritime security cooperation.",
+                        "source": source,
+                    }
+                )
+        pd.DataFrame(rows).to_csv(raw_dir / "india_japan_documents.csv", index=False, encoding="utf-8")
+        monkeypatch.setenv("DIPLOMATIC_BAROMETER_DATA_DIR", str(raw_dir))
+
         loader = DataLoader()
-        df = loader.load_combined_data()  # No files → fallback
+        df = loader.load_combined_data()
         assert len(df) >= 50
 
 
@@ -98,23 +123,81 @@ class TestCrawlers:
 class TestRealDataLoader:
     """Test the real data loader"""
 
-    def test_load_all_documents(self):
+    def test_load_all_documents(self, tmp_path, monkeypatch):
         from utils.real_data_loader import RealDataLoader
+        import pandas as pd
+
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for year in range(2000, 2025):
+            for source in ("MEA", "MOFA"):
+                rows.append(
+                    {
+                        "date": f"{year}-01-01",
+                        "title": f"{source} Document {year}",
+                        "location": "Test Location",
+                        "signatories": "Test Signatory",
+                        "content": "Infrastructure and maritime security cooperation.",
+                        "source": source,
+                    }
+                )
+        pd.DataFrame(rows).to_csv(raw_dir / "india_japan_documents.csv", index=False, encoding="utf-8")
+        monkeypatch.setenv("DIPLOMATIC_BAROMETER_DATA_DIR", str(raw_dir))
+
         loader = RealDataLoader()
         df = loader.load_all_documents()
         assert isinstance(df, pd.DataFrame)
         assert len(df) >= 50
 
-    def test_load_mea_documents(self):
+    def test_load_mea_documents(self, tmp_path, monkeypatch):
         from utils.real_data_loader import RealDataLoader
+        import pandas as pd
+
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for year in range(2000, 2025):
+            rows.append(
+                {
+                    "date": f"{year}-01-01",
+                    "title": f"MEA Document {year}",
+                    "location": "Test Location",
+                    "signatories": "Test Signatory",
+                    "content": "Trade and investment cooperation.",
+                    "source": "MEA",
+                }
+            )
+        pd.DataFrame(rows).to_csv(raw_dir / "india_japan_documents.csv", index=False, encoding="utf-8")
+        monkeypatch.setenv("DIPLOMATIC_BAROMETER_DATA_DIR", str(raw_dir))
+
         loader = RealDataLoader()
         df = loader.load_mea_documents()
         assert isinstance(df, pd.DataFrame)
         assert len(df) > 0
         assert all(df['source'] == 'MEA')
 
-    def test_load_mofa_documents(self):
+    def test_load_mofa_documents(self, tmp_path, monkeypatch):
         from utils.real_data_loader import RealDataLoader
+        import pandas as pd
+
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for year in range(2000, 2025):
+            rows.append(
+                {
+                    "date": f"{year}-01-01",
+                    "title": f"MOFA Document {year}",
+                    "location": "Test Location",
+                    "signatories": "Test Signatory",
+                    "content": "Maritime security cooperation.",
+                    "source": "MOFA",
+                }
+            )
+        pd.DataFrame(rows).to_csv(raw_dir / "india_japan_documents.csv", index=False, encoding="utf-8")
+        monkeypatch.setenv("DIPLOMATIC_BAROMETER_DATA_DIR", str(raw_dir))
+
         loader = RealDataLoader()
         df = loader.load_mofa_documents()
         assert isinstance(df, pd.DataFrame)

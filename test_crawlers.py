@@ -1,4 +1,12 @@
-\"\"\"Tests for the MEA and MOFA crawlers\"\"\"
+"""Crawler validation script (not a pytest test module).
+
+This file is intended to be run manually (e.g., `python test_crawlers.py`) to
+sanity-check crawler imports and the end-to-end pipeline using real data.
+"""
+
+# Prevent pytest from collecting this as a test module even though the filename
+# matches its default patterns.
+__test__ = False
 
 import sys
 import os
@@ -104,22 +112,22 @@ class CrawlerTestSuite:
             self.crawler_status['country_config'] = f'FAIL: {str(e)}'
     
     def test_data_pipeline(self):
-        """Test the complete data pipeline with sample data"""
+        """Test the complete data pipeline with real data"""
         logger.info("\n" + "="*70)
-        logger.info("TEST 4: Validating Data Pipeline (Sample Data)")
+        logger.info("TEST 4: Validating Data Pipeline (Real Data)")
         logger.info("="*70)
         
         try:
             from scrapers.data_loader import DataLoader
             from preprocessing.preprocessor import Preprocessor
-            from analysis.strategic_shift import StrategicShiftAnalyzer
+            from analysis.strategic_shift_enhanced import StrategicShiftAnalyzer
             from analysis.tone_analyzer import ToneAnalyzer
             from analysis.thematic_clustering import ThematicAnalyzer
             
             # Load data
-            logger.info("\n[Step 1] Loading sample data...")
+            logger.info("\n[Step 1] Loading real data...")
             loader = DataLoader()
-            df = loader.load_sample_data()
+            df = loader.load_combined_data()
             logger.info(f"✓ Loaded {len(df)} documents")
             
             # Preprocess

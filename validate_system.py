@@ -168,9 +168,9 @@ class ValidationChecklist:
         try:
             from scrapers.data_loader import DataLoader
             loader = DataLoader()
-            df = loader.load_sample_data()
-            
-            self.log_test("DataLoader: Sample data loading", len(df) == 10, f"({len(df)} documents)")
+            df = loader.load_combined_data()
+
+            self.log_test("DataLoader: Real data loading", len(df) > 0, f"({len(df)} documents)")
             self.log_test("DataLoader: Date column", 'date' in df.columns)
             self.log_test("DataLoader: Content column", 'content' in df.columns)
             self.log_test("DataLoader: Year column", 'year' in df.columns)
@@ -187,19 +187,23 @@ class ValidationChecklist:
             from preprocessing.preprocessor import Preprocessor
             
             loader = DataLoader()
-            df = loader.load_sample_data()
+            df = loader.load_combined_data()
             
             preprocessor = Preprocessor()
             processed_df = preprocessor.process_dataframe(df, content_column='content')
             
-            self.log_test("Preprocessor: Document processing", len(processed_df) == 10)
+            self.log_test("Preprocessor: Document processing", len(processed_df) > 0)
             self.log_test("Preprocessor: 'cleaned' column", 'cleaned' in processed_df.columns)
             self.log_test("Preprocessor: 'tokens' column", 'tokens' in processed_df.columns)
             self.log_test("Preprocessor: 'entities' column", 'entities' in processed_df.columns)
             
             # Check for non-empty cleaned texts
             non_empty = processed_df['cleaned'].apply(lambda x: len(str(x).strip()) > 0).sum()
-            self.log_test("Preprocessor: Non-empty cleaned texts", non_empty == 10, f"({non_empty}/10)")
+            self.log_test(
+                "Preprocessor: Non-empty cleaned texts",
+                non_empty == len(processed_df),
+                f"({non_empty}/{len(processed_df)})"
+            )
             
         except Exception as e:
             error_str = str(e)
@@ -221,7 +225,7 @@ class ValidationChecklist:
             from analysis.thematic_clustering import ThematicAnalyzer
             
             loader = DataLoader()
-            df = loader.load_sample_data()
+            df = loader.load_combined_data()
             
             preprocessor = Preprocessor()
             processed_df = preprocessor.process_dataframe(df, content_column='content')

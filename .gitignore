@@ -100,6 +100,9 @@ snapshots/
 .env.*.local
 .secrets
 
+# Local documentation notes
+POLITICAL_PARTY_ANALYSIS_GUIDE.md
+
 ## Project proposals and local run scripts (do not publish)
 proposal_direct_application.txt
 proposal_mext_version.txt
@@ -108,3 +111,7 @@ runcmds.txt
 
 research_proposal.txt
 runcmds.txt
+DataBASE.md
+FutureScope.md
+Political.pdf
+PLANNING.md

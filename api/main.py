@@ -104,7 +104,7 @@ def create_app() -> FastAPI:
         if state["df"] is None:
             from scrapers.data_loader import DataLoader
             loader = DataLoader()
-            state["df"] = loader.load_sample_data()
+            state["df"] = loader.load_combined_data()
         return state["df"]
 
     # ── routes ───────────────────────────────────────────────────────

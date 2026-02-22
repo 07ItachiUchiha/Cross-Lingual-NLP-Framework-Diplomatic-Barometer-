@@ -16,7 +16,7 @@ The project ingests official diplomatic documents, performs structured preproces
 
 ## Setup
 
-Use a Python 3.9+ virtual environment and install dependencies:
+Use a **Python 3.11** virtual environment for stable spaCy compatibility and install dependencies:
 
 ```bash
 cd diplomatic_barometer
@@ -25,6 +25,12 @@ python -m venv .venv
 # macOS / Linux: source .venv/bin/activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
+```
+
+Windows PowerShell quick setup (recommended):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_pre_rag_env.ps1
 ```
 
 ## Run the pipeline and dashboard
@@ -41,9 +47,51 @@ streamlit run dashboard/app.py
 
 The dashboard opens at <http://localhost:8501> by default.
 
+## Optional: external signals (news + GDELT)
+
+You can fetch external context signals (news coverage + GDELT event/news indexing) into `data/raw/`.
+This does **not** change the pre-RAG pipeline unless you choose to incorporate those outputs.
+
+1. Add keys to a local `.env` (do not commit it):
+
+```env
+NEWSDATA_API_KEY=...
+NEWSAPI_API_KEY=...
+WORLDNEWS_API_KEY=...
+```
+
+2. Fetch signals:
+
+```bash
+python run.py --fetch-news --external-query "India Japan joint statement" --external-max 100
+```
+
+Outputs:
+
+- `data/raw/external_signals_*.csv`
+- `data/raw/external_signals_report_*.json`
+
+## Optional: build a larger official corpus (beyond ~51 rows)
+
+If your current `data/raw/india_japan_documents.csv` has ~51 rows, that is simply the size of the seed corpus.
+For policy work, you usually want a much larger, real-data corpus.
+
+This project includes an **official corpus builder** that uses **GDELT DOC 2.0** to discover historical MEA/MOFA
+India–Japan pages and then fetches and extracts their text:
+
+```bash
+python run.py --build-official-corpus --corpus-start-year 2000 --corpus-end-year 2026 --corpus-max-docs 600
+```
+
+If you want the pipeline to use the newly built corpus by default, promote it to the canonical corpus:
+
+```bash
+python run.py --build-official-corpus --promote-corpus
+```
+
 ## Project layout (implementation-focused)
 
-```
+```text
 diplomatic_barometer/
 ├── scrapers/           # data loaders for MEA and MOFA source documents
 ├── preprocessing/      # cleaning, tokenization, lemmatization
@@ -98,6 +146,7 @@ The tests cover data loading, preprocessing, analysis modules, and pipeline inte
 - Ensure `en_core_web_sm` is downloaded for `spaCy` processing.
 - Use the same `requirements.txt` to recreate the environment.
 - Processed outputs are in `data/processed/` (check `analysis_results.json` for the processed corpus summary).
+- Each pipeline run now writes `data/processed/data_provenance_report.json` with row counts, source split, missing fields, and duplicate-removal stats.
 
 ## Files not to publish
 

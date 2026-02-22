@@ -6,11 +6,19 @@ Handles text cleaning, tokenization, lemmatization, and entity recognition
 import re
 import logging
 import pandas as pd
-from typing import List, Tuple
-import spacy
+from typing import List, Tuple, Optional, Iterable
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
 import nltk
+
+try:
+    import spacy
+    from spacy.matcher import PhraseMatcher
+    SPACY_IMPORT_ERROR = None
+except Exception as exc:
+    spacy = None
+    PhraseMatcher = None
+    SPACY_IMPORT_ERROR = exc
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -83,12 +91,24 @@ class TextCleaner:
 class Tokenizer:
     """Tokenize and process text"""
     
-    def __init__(self):
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            logger.warning("SpaCy model not found. Download it with: python -m spacy download en_core_web_sm")
-            self.nlp = None
+    def __init__(self, phrase_terms: Optional[Iterable[str]] = None):
+        self.nlp = None
+        self.phrase_terms = [str(t).strip() for t in (phrase_terms or []) if str(t).strip()]
+        self._phrase_matcher = None
+        if spacy is None:
+            logger.warning(
+                "SpaCy import unavailable. Falling back to NLTK tokenization/lemmatization-free mode. "
+                f"Reason: {SPACY_IMPORT_ERROR}"
+            )
+        else:
+            try:
+                self.nlp = spacy.load("en_core_web_sm")
+                self._phrase_matcher = self._build_phrase_matcher(self.phrase_terms)
+            except Exception as exc:
+                logger.warning(
+                    "SpaCy model/runtime not available. Falling back to NLTK tokenization mode. "
+                    f"Reason: {exc}. Install model with: python -m spacy download en_core_web_sm"
+                )
         
         self.stop_words = set(stopwords.words('english'))
         
@@ -99,6 +119,67 @@ class Tokenizer:
         }
         
         self.stop_words.update(self.diplomatic_stopwords)
+
+    @staticmethod
+    def _norm(text: str) -> str:
+        return re.sub(r"\s+", " ", str(text or "").strip().lower())
+
+    @staticmethod
+    def _term_variants(term: str) -> List[str]:
+        base = Tokenizer._norm(term)
+        if not base:
+            return []
+        variants = {base, base.replace("-", " ")}
+        if " " in base:
+            variants.add(base.replace(" ", ""))
+        out = []
+        seen = set()
+        for v in variants:
+            v2 = re.sub(r"\s+", " ", v).strip()
+            if v2 and v2 not in seen:
+                seen.add(v2)
+                out.append(v2)
+        return out
+
+    def _build_phrase_matcher(self, terms: List[str]):
+        if self.nlp is None or PhraseMatcher is None or not terms:
+            return None
+
+        matcher = PhraseMatcher(self.nlp.vocab, attr="LOWER")
+        patterns = []
+        for t in terms:
+            for v in self._term_variants(t):
+                if " " not in v:
+                    continue
+                try:
+                    patterns.append(self.nlp.make_doc(v))
+                except Exception:
+                    continue
+        if patterns:
+            matcher.add("PHRASE", patterns)
+        return matcher
+
+    def _merge_phrases(self, doc):
+        """Merge matched phrase spans into single tokens with underscore lemma."""
+        if self._phrase_matcher is None:
+            return doc
+
+        matches = list(self._phrase_matcher(doc))
+        if not matches:
+            return doc
+
+        spans = sorted({doc[start:end] for _, start, end in matches}, key=lambda s: (-(s.end - s.start), s.start))
+
+        with doc.retokenize() as retok:
+            for span in spans:
+                if span.start >= span.end:
+                    continue
+                merged = self._norm(span.text).replace(" ", "_")
+                try:
+                    retok.merge(span, attrs={"LEMMA": merged, "ORTH": merged})
+                except Exception:
+                    continue
+        return doc
     
     def sentence_tokenize(self, text: str) -> List[str]:
         """Split text into sentences"""
@@ -116,10 +197,19 @@ class Tokenizer:
     def lemmatize(self, text: str) -> List[str]:
         """Lemmatize text using spaCy"""
         if not self.nlp:
-            logger.warning("SpaCy model not available. Returning original tokens.")
-            return self.word_tokenize(text)
+            out_text = str(text or "")
+            lowered = out_text.lower()
+            for t in self.phrase_terms:
+                for v in self._term_variants(t):
+                    if not v or " " not in v:
+                        continue
+                    if v in lowered:
+                        out_text = re.sub(re.escape(v), v.replace(" ", "_"), out_text, flags=re.IGNORECASE)
+                        lowered = out_text.lower()
+            return self.word_tokenize(out_text)
         
-        doc = self.nlp(text.lower())
+        doc = self.nlp(str(text or "").lower())
+        doc = self._merge_phrases(doc)
         lemmas = [token.lemma_ for token in doc if not token.is_punct]
         return lemmas
     
@@ -136,9 +226,19 @@ class Tokenizer:
 class Preprocessor:
     """Main preprocessing pipeline"""
     
-    def __init__(self):
+    def __init__(self, phrase_terms: Optional[Iterable[str]] = None):
         self.cleaner = TextCleaner()
-        self.tokenizer = Tokenizer()
+
+        # Default phrase terms: strategic-shift lexicons (helps preserve Indo-Pacific, joint exercise, yen loan, etc.)
+        if phrase_terms is None:
+            try:
+                from analysis.strategic_shift_enhanced import LexiconDefinitions
+
+                phrase_terms = sorted(set(LexiconDefinitions.ECONOMIC_LEXICON) | set(LexiconDefinitions.SECURITY_LEXICON))
+            except Exception:
+                phrase_terms = []
+
+        self.tokenizer = Tokenizer(phrase_terms=phrase_terms)
     
     def preprocess_text(self, text: str) -> dict:
         """

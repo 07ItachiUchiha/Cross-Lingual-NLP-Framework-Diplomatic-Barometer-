@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 class MOFACrawler:
     """Crawler for Japanese MOFA documents.
     
-    Loads from the built-in dataset of ~50 India-Japan diplomatic
-    documents (2000-2024).
+    Loads real MOFA documents from the validated corpus CSV.
     """
     
     def __init__(self):
@@ -27,7 +26,7 @@ class MOFACrawler:
         """Fetch all MOFA-sourced India-Japan documents"""
         from scrapers.data_loader import DataLoader
         loader = DataLoader()
-        df = loader.load_sample_data()
+        df = loader.load_real_data()
         mofa_docs = df[df['source'] == 'MOFA'].copy()
         self.documents = mofa_docs.to_dict('records')
         logger.info(f"Loaded {len(mofa_docs)} MOFA documents")

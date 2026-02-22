@@ -59,6 +59,34 @@ class TestStrategicShiftAnalyzer:
         importlib.reload(pipeline)
         # The import should succeed without error if using enhanced version
 
+    def test_multiword_lexicon_phrases_match(self):
+        """Multi-word lexicon phrases must contribute to scores.
+
+        This guards against the regression where matching is done token-by-token on lemmas,
+        which silently drops phrases like 'yen loan' or 'joint exercise'.
+        """
+
+        from analysis.strategic_shift_enhanced import StrategicShiftAnalyzer
+
+        analyzer = StrategicShiftAnalyzer()
+        df = pd.DataFrame(
+            {
+                "date": ["2020-01-01", "2020-02-01"],
+                "cleaned": [
+                    "The countries agreed to expand the yen loan program for major infrastructure projects.",
+                    "They announced a joint exercise and maritime security cooperation between coast guards.",
+                ],
+                "lemmas": [
+                    ["yen", "loan", "infrastructure"],
+                    ["joint", "exercise", "maritime", "security", "coast", "guard"],
+                ],
+            }
+        )
+
+        scored = analyzer.calculate_category_scores(df)
+        assert float(scored.loc[0, "economic_score"]) > 0.0
+        assert float(scored.loc[1, "security_score"]) > 0.0
+
 
 class TestToneAnalyzer:
     """Test the tone analyzer"""

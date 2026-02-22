@@ -7,6 +7,7 @@ import logging
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 from collections import Counter
+from scipy import sparse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,16 +51,41 @@ class TopicModeler:
         # Combine stopwords and convert to list
         all_stopwords = list(english_stops | custom_stopwords)
         
-        self.vectorizer = CountVectorizer(
-            max_features=self.max_features,
-            stop_words=all_stopwords,  # Pass as list, not frozenset
-            min_df=1,  # Lower minimum to capture more variation (was 2)
-            max_df=0.9,  # Raise ceiling slightly (was 0.8)
-            token_pattern=r'(?u)\b[a-z]{3,}\b',  # Require 3+ char words
-            ngram_range=(1, 2)  # Include bigrams for better context
-        )
-        
-        doc_term_matrix = self.vectorizer.fit_transform(texts)
+        def _make_vectorizer(max_df_value: float, stop_words_value):
+            return CountVectorizer(
+                max_features=self.max_features,
+                stop_words=stop_words_value,
+                min_df=1,
+                max_df=max_df_value,
+                token_pattern=r'(?u)\b[a-z]{3,}\b',
+                ngram_range=(1, 2),
+            )
+
+        # Default settings: prune extremely common terms. If the corpus is very uniform,
+        # this can remove everything; we retry with max_df=1.0.
+        self.vectorizer = _make_vectorizer(0.9, all_stopwords)
+
+        try:
+            doc_term_matrix = self.vectorizer.fit_transform(texts)
+        except ValueError as exc:
+            msg = str(exc)
+            if "After pruning, no terms remain" in msg:
+                logger.warning("Vectorizer pruned all terms; retrying with max_df=1.0")
+                self.vectorizer = _make_vectorizer(1.0, all_stopwords)
+                try:
+                    doc_term_matrix = self.vectorizer.fit_transform(texts)
+                except ValueError:
+                    # As a last resort, drop custom stopwords and retry once.
+                    logger.warning("Retrying vectorizer with max_df=1.0 and no custom stopwords")
+                    self.vectorizer = _make_vectorizer(1.0, 'english')
+                    try:
+                        doc_term_matrix = self.vectorizer.fit_transform(texts)
+                    except ValueError:
+                        self.feature_names = np.array([])
+                        return sparse.csr_matrix((len(texts), 0), dtype=np.int64)
+            else:
+                raise
+
         self.feature_names = self.vectorizer.get_feature_names_out()
         
         logger.info(f"Created document-term matrix: {doc_term_matrix.shape}")
@@ -84,7 +110,7 @@ class TopicModeler:
             learning_method='online',  # More stable
             learning_offset=50.0,  # Weight for early documents
             random_state=42,
-            n_jobs=-1,  # Use all processors
+            n_jobs=1,  # Avoid joblib parallelism for stability across environments
             verbose=0,
             topic_word_prior=0.01,  # Lower = more sparse (distinct) topics
             doc_topic_prior=0.01  # Lower = each doc focuses on fewer topics
@@ -196,6 +222,26 @@ class ThematicAnalyzer:
         # Prepare all documents
         all_texts = df[text_column].fillna('').astype(str).tolist()
         doc_term_matrix = self.modeler.prepare_documents(all_texts)
+
+        # If we cannot build a vocabulary (e.g., extremely uniform text), return a safe empty result.
+        try:
+            n_features = int(getattr(doc_term_matrix, "shape", (0, 0))[1])
+        except Exception:
+            n_features = 0
+
+        if n_features == 0:
+            df['primary_topic'] = -1
+            df['year'] = pd.to_datetime(df['date']).dt.year
+            analysis = {
+                'n_topics': 0,
+                'overall_themes': {},
+                'topic_distribution_by_year': {},
+                'topic_weights_by_year': {},
+                'documents_with_primary_topic': df[['year', 'primary_topic']].to_dict('records'),
+                'warning': 'No vocabulary available for topic modeling (corpus may be too uniform or too small).',
+            }
+            logger.warning(analysis['warning'])
+            return analysis, df
         
         # Fit LDA model
         self.modeler.fit_lda(doc_term_matrix)
@@ -203,21 +249,39 @@ class ThematicAnalyzer:
         # Get overall themes
         themes = self.modeler.get_top_words_per_topic(n_words=8)
         
-        # Get document-topic assignments
-        primary_topics = self.modeler.get_primary_topic_per_document(doc_term_matrix)
+        # Get document-topic assignments (global model)
+        doc_topics = self.modeler.get_document_topics(doc_term_matrix)
+        primary_topics = np.argmax(doc_topics, axis=1).tolist() if doc_topics is not None else []
         df['primary_topic'] = primary_topics
         
         # Analyze topic distribution by year
         df['year'] = pd.to_datetime(df['date']).dt.year
         
-        yearly_topic_dist = df.groupby('year')['primary_topic'].apply(
-            lambda x: Counter(x).most_common()
-        ).to_dict()
+        # Comparable per-year topic weights using the same global topic space.
+        # For each year, compute mean topic probability across docs in that year.
+        topic_weights_by_year: Dict[int, List[Tuple[int, float]]] = {}
+        if doc_topics is not None and len(doc_topics) == len(df):
+            df_topics = df[['year']].copy()
+            for t in range(self.modeler.n_topics):
+                df_topics[f'topic_{t}'] = doc_topics[:, t]
+            for year, g in df_topics.groupby('year'):
+                weights = []
+                for t in range(self.modeler.n_topics):
+                    weights.append((int(t), float(pd.to_numeric(g[f'topic_{t}'], errors='coerce').fillna(0.0).mean())))
+                weights = sorted(weights, key=lambda x: x[1], reverse=True)
+                topic_weights_by_year[int(year)] = weights
+
+        # Backward compatible: topic_distribution_by_year
+        # Previously was counts of primary_topic; now return top topics with mean weights.
+        yearly_topic_dist: Dict[int, List[Tuple[int, float]]] = {
+            int(y): v[: max(1, min(5, self.modeler.n_topics))] for y, v in topic_weights_by_year.items()
+        }
         
         analysis = {
             'n_topics': self.modeler.n_topics,
             'overall_themes': themes,
             'topic_distribution_by_year': yearly_topic_dist,
+            'topic_weights_by_year': topic_weights_by_year,
             'documents_with_primary_topic': df[['year', 'primary_topic']].to_dict('records')
         }
         

@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 class MEACrawler:
     """Crawler for Indian Ministry of External Affairs documents.
     
-    Uses the built-in comprehensive dataset of 50 India-Japan diplomatic
-    documents (2000-2024) sourced from MEA publications.
+    Loads real MEA documents from the validated corpus CSV.
     """
     
     def __init__(self):
@@ -27,7 +26,7 @@ class MEACrawler:
         """Fetch all MEA-sourced India-Japan documents"""
         from scrapers.data_loader import DataLoader
         loader = DataLoader()
-        df = loader.load_sample_data()
+        df = loader.load_real_data()
         mea_docs = df[df['source'] == 'MEA'].copy()
         self.documents = mea_docs.to_dict('records')
         logger.info(f"Loaded {len(mea_docs)} MEA documents")

@@ -18,28 +18,24 @@ logger = logging.getLogger(__name__)
 
 
 class RealDataLoader:
-    """Load diplomatic documents from MEA (India) and MOFA (Japan)
-    
-    Uses the built-in comprehensive dataset (50 docs, 2000-2024) by default.
-    When live crawling is needed, delegates to the enhanced crawlers.
-    """
+    """Load diplomatic documents from real MEA and MOFA data only."""
     
     def __init__(self):
         self.cache_dir = Path(__file__).parent.parent / 'data' / 'raw'
         self.cache_dir.mkdir(parents=True, exist_ok=True)
     
     def load_all_documents(self) -> pd.DataFrame:
-        """Load the complete India-Japan document dataset"""
+        """Load the complete India-Japan document dataset from real CSV."""
         from scrapers.data_loader import DataLoader
         loader = DataLoader()
-        df = loader.load_sample_data()
+        df = loader.load_real_data()
         logger.info(f"Loaded {len(df)} India-Japan diplomatic documents")
         return df
     
     def load_mea_documents(self, query: str = "bilateral relations", max_results: int = 50) -> pd.DataFrame:
         """
         Load documents from Indian Ministry of External Affairs.
-        Returns MEA-sourced documents from the built-in dataset.
+        Returns MEA-sourced documents from real data.
         
         Args:
             query: Search term (used for filtering)
@@ -67,7 +63,7 @@ class RealDataLoader:
     def load_mofa_documents(self, query: str = "日本インド", max_results: int = 50) -> pd.DataFrame:
         """
         Load documents from Japanese Ministry of Foreign Affairs.
-        Returns MOFA-sourced documents from the built-in dataset.
+        Returns MOFA-sourced documents from real data.
         
         Args:
             query: Search term
