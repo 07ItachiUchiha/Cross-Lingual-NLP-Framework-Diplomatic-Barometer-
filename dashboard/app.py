@@ -475,7 +475,7 @@ def build_live_geopolitical_pulse(external_ctx: Dict) -> Dict:
             )
             events_df["url_norm"] = events_df["url"].str.lower().str.strip()
             events_df["event_key"] = events_df.apply(
-                lambda r: r["url_norm"] if r["url_norm"] else r["title_norm"],
+                lambda r: r["title_norm"] if r["title_norm"] else r["url_norm"],
                 axis=1,
             )
             events_df = events_df.sort_values("published_at", ascending=False)
@@ -1554,10 +1554,18 @@ def main():
         pdf_scope = st.sidebar.selectbox(
             "PDF scope",
             ["Active filtered view", "Full corpus (ignore sidebar filters)"],
-            index=0,
+            index=1,
             key="pdf_scope_selector",
         )
-        if st.sidebar.button("Download PDF Report", type="primary"):
+
+        if pdf_scope == "Full corpus (ignore sidebar filters)":
+            current_pdf_signature = ("full", _corpus_cache_token())
+            st.sidebar.caption("PDF snapshot uses full corpus (pre-filter view).")
+        else:
+            current_pdf_signature = ("filtered", filter_signature)
+            st.sidebar.caption(f"PDF snapshot uses active filtered view ({active_doc_count} docs).")
+
+        if st.sidebar.button("Generate PDF Report", type="primary"):
             with st.spinner("Generating PDF report..."):
                 try:
                     if pdf_scope == "Full corpus (ignore sidebar filters)":
@@ -1581,16 +1589,32 @@ def main():
                     if success:
                         with open(tmp_file.name, 'rb') as f:
                             pdf_bytes = f.read()
-                        st.sidebar.download_button(
-                            label="Save PDF",
-                            data=pdf_bytes,
-                            file_name="diplomatic_barometer_report.pdf",
-                            mime="application/pdf"
-                        )
+                        st.session_state["pdf_report_bytes"] = pdf_bytes
+                        st.session_state["pdf_report_signature"] = current_pdf_signature
+                        st.session_state["pdf_report_filename"] = "diplomatic_barometer_report.pdf"
+                        st.sidebar.success("PDF generated. Click Save PDF below.")
+                        try:
+                            os.remove(tmp_file.name)
+                        except Exception:
+                            pass
                     else:
                         st.sidebar.error("PDF generation failed")
                 except Exception as e:
                     st.sidebar.error(f"Error: {str(e)}")
+
+        cached_pdf_bytes = st.session_state.get("pdf_report_bytes")
+        cached_pdf_signature = st.session_state.get("pdf_report_signature")
+        cached_filename = st.session_state.get("pdf_report_filename", "diplomatic_barometer_report.pdf")
+
+        if cached_pdf_bytes and cached_pdf_signature == current_pdf_signature:
+            st.sidebar.download_button(
+                label="Save PDF",
+                data=cached_pdf_bytes,
+                file_name=cached_filename,
+                mime="application/pdf"
+            )
+        elif cached_pdf_bytes and cached_pdf_signature != current_pdf_signature:
+            st.sidebar.info("PDF snapshot is out of date for current scope/filters. Click Generate PDF Report.")
     
     st.sidebar.markdown("---")
 

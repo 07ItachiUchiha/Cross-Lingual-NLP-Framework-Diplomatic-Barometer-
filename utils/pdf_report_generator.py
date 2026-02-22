@@ -782,8 +782,18 @@ class PDFReportGenerator:
                         if not title:
                             continue
 
-                        title_norm = " ".join(title.lower().split())
-                        event_key = url if url else f"{provider}|{title_norm}"
+                        title_norm = (
+                            title.lower()
+                            .replace("’", "'")
+                            .replace("`", "'")
+                            .replace("–", "-")
+                            .replace("—", "-")
+                        )
+                        title_norm = " ".join(title_norm.split())
+                        title_norm = "".join(ch for ch in title_norm if ch.isalnum() or ch.isspace())
+                        title_norm = " ".join(title_norm.split())
+
+                        event_key = title_norm if title_norm else (url if url else f"{provider}|{published}")
                         if event_key in seen_event_keys:
                             continue
                         seen_event_keys.add(event_key)
