@@ -8,8 +8,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
 from scipy import stats
 from typing import Dict, List, Tuple, Optional
 import sys
@@ -52,6 +50,7 @@ logger = logging.getLogger(__name__)
 
 MIN_DOCS_TONE_THEME = 15
 MIN_DOCS_SIGNIFICANCE = 20
+MIN_DOCS_CHART_HARD_GUARD = 10
 
 
 def _file_signature(path: Path) -> str:
@@ -190,7 +189,9 @@ def perform_tone_analysis(_df):
 @cache_data(show_spinner="Analyzing themes...")
 def perform_thematic_analysis(_df):
     """Cached thematic analysis"""
-    thematic_analyzer = ThematicAnalyzer(n_topics=5)
+    n_docs = int(len(_df)) if isinstance(_df, pd.DataFrame) else 0
+    adaptive_topics = max(2, min(5, int(n_docs ** 0.5))) if n_docs > 0 else 2
+    thematic_analyzer = ThematicAnalyzer(n_topics=adaptive_topics)
     analysis, df_themes = thematic_analyzer.analyze_theme_evolution(
         _df,
         text_column='cleaned'
@@ -873,6 +874,64 @@ def render_data_basis_caption(run_meta: Dict[str, str], chart_label: str, point_
     )
 
 
+def compute_chart_adequacy(
+    df: pd.DataFrame,
+    x_col: str,
+    y_col: str,
+    min_years: int = 4,
+    min_points: int = 10,
+    min_variance: float = 1e-4,
+) -> Dict[str, object]:
+    if not isinstance(df, pd.DataFrame) or len(df) == 0 or x_col not in df.columns or y_col not in df.columns:
+        return {
+            "years": 0,
+            "points": 0,
+            "missing_pct": 100.0,
+            "variance": 0.0,
+            "low_info": True,
+            "reasons": ["insufficient data"],
+        }
+
+    working = df.copy()
+    missing_mask = working[[x_col, y_col]].isna().any(axis=1)
+    missing_pct = float(missing_mask.mean() * 100.0)
+    working = working.dropna(subset=[x_col, y_col])
+
+    years = int(pd.to_numeric(working[x_col], errors="coerce").dropna().nunique())
+    points = int(len(working))
+    variance = float(pd.to_numeric(working[y_col], errors="coerce").dropna().var()) if points > 1 else 0.0
+
+    reasons: List[str] = []
+    if years < min_years:
+        reasons.append(f"only {years} years")
+    if points < min_points:
+        reasons.append(f"only {points} points")
+    if variance < min_variance:
+        reasons.append("near-flat signal")
+
+    return {
+        "years": years,
+        "points": points,
+        "missing_pct": round(missing_pct, 1),
+        "variance": variance,
+        "low_info": len(reasons) > 0,
+        "reasons": reasons,
+    }
+
+
+def render_data_adequacy_badges(label: str, adequacy: Dict[str, object]):
+    st.caption(f"Data adequacy — {label}")
+    b1, b2, b3, b4 = st.columns(4)
+    with b1:
+        st.metric("Years", int(adequacy.get("years", 0)))
+    with b2:
+        st.metric("Points", int(adequacy.get("points", 0)))
+    with b3:
+        st.metric("Missing %", f"{float(adequacy.get('missing_pct', 0.0)):.1f}")
+    with b4:
+        st.metric("Variance", f"{float(adequacy.get('variance', 0.0)):.4f}")
+
+
 def build_role_takeaways(role_profile: str, page_key: str, context: Dict[str, object]) -> List[str]:
     docs = int(context.get("docs", 0) or 0)
     years = int(context.get("years", 0) or 0)
@@ -1280,20 +1339,24 @@ def main():
     with st.sidebar.expander("Filter impact log", expanded=False):
         st.dataframe(pd.DataFrame(filter_steps), width='stretch', hide_index=True)
 
-    logger.info(
-        "Filter pipeline reduced corpus from %s to %s docs. Steps=%s",
-        doc_count,
-        active_doc_count,
-        [
-            {
-                "step": s.get("step"),
-                "before": s.get("before"),
-                "after": s.get("after"),
-                "detail": s.get("detail"),
-            }
-            for s in filter_steps
-        ],
-    )
+    filter_log_payload = [
+        {
+            "step": s.get("step"),
+            "before": s.get("before"),
+            "after": s.get("after"),
+            "detail": s.get("detail"),
+        }
+        for s in filter_steps
+    ]
+    filter_signature = (int(doc_count), int(active_doc_count), tuple((p["step"], p["before"], p["after"], p["detail"]) for p in filter_log_payload))
+    if st.session_state.get("_last_filter_signature") != filter_signature:
+        logger.info(
+            "Filter pipeline reduced corpus from %s to %s docs. Steps=%s",
+            doc_count,
+            active_doc_count,
+            filter_log_payload,
+        )
+        st.session_state["_last_filter_signature"] = filter_signature
 
     years_covered = int(processed_df["year"].nunique()) if "year" in processed_df.columns else 0
     exploratory_mode = bool(active_doc_count < MIN_DOCS_SIGNIFICANCE or years_covered < 5)
@@ -1814,6 +1877,13 @@ def main():
         if tone_analyzer is None or tone_df is None or len(tone_df) == 0:
             st.error("Unable to perform tone analysis. Please check that data has been loaded correctly.")
             st.stop()
+
+        tone_charts_enabled = bool(len(processed_df) >= MIN_DOCS_CHART_HARD_GUARD)
+        if not tone_charts_enabled:
+            st.warning(
+                f"Tone charts are disabled because filtered docs ({len(processed_df)}) are below the hard threshold ({MIN_DOCS_CHART_HARD_GUARD}).",
+                icon="⚠️",
+            )
         
         # Tone distribution
         col1, col2 = st.columns(2)
@@ -1821,29 +1891,49 @@ def main():
         with col1:
             st.subheader("Tone Distribution")
             tone_dist = tone_analyzer.get_tone_distribution(tone_df)
-            fig = px.pie(
-                values=list(tone_dist.values()),
-                names=list(tone_dist.keys()),
-                title="Distribution of Diplomatic Tones"
-            )
-            st.plotly_chart(fig, width='stretch')
-            render_data_basis_caption(run_meta, "Tone distribution", point_count=len(tone_df))
+            tone_dist_df = pd.DataFrame(
+                {
+                    "tone": list(tone_dist.keys()),
+                    "count": list(tone_dist.values()),
+                }
+            ).sort_values("count", ascending=False)
+            if tone_charts_enabled:
+                fig = px.bar(
+                    tone_dist_df,
+                    x="tone",
+                    y="count",
+                    title="Distribution of Diplomatic Tones",
+                )
+                st.plotly_chart(fig, width='stretch')
+                render_data_basis_caption(run_meta, "Tone distribution", point_count=len(tone_df))
+            else:
+                st.dataframe(tone_dist_df, width='stretch', hide_index=True)
         
         with col2:
             st.subheader("Sentiment Distribution")
             sentiment_dist = tone_analyzer.get_sentiment_distribution(tone_df)
-            fig = px.pie(
-                values=list(sentiment_dist.values()),
-                names=list(sentiment_dist.keys()),
-                title="Distribution of Sentiments",
-                color_discrete_map={
-                    'Positive': '#2ecc71',
-                    'Neutral': '#95a5a6',
-                    'Negative': '#e74c3c'
+            sentiment_dist_df = pd.DataFrame(
+                {
+                    "sentiment": list(sentiment_dist.keys()),
+                    "count": list(sentiment_dist.values()),
                 }
-            )
-            st.plotly_chart(fig, width='stretch')
-            render_data_basis_caption(run_meta, "Sentiment distribution", point_count=len(tone_df))
+            ).sort_values("count", ascending=False)
+            if tone_charts_enabled:
+                fig = px.bar(
+                    sentiment_dist_df,
+                    x="sentiment",
+                    y="count",
+                    title="Distribution of Sentiments",
+                    color_discrete_map={
+                        'Positive': '#2ecc71',
+                        'Neutral': '#95a5a6',
+                        'Negative': '#e74c3c'
+                    },
+                )
+                st.plotly_chart(fig, width='stretch')
+                render_data_basis_caption(run_meta, "Sentiment distribution", point_count=len(tone_df))
+            else:
+                st.dataframe(sentiment_dist_df, width='stretch', hide_index=True)
         
         # Yearly tone statistics
         st.subheader("Yearly Tone Trends")
@@ -1851,39 +1941,127 @@ def main():
 
         if yearly_tone is None or len(yearly_tone) == 0:
             st.warning("No yearly tone statistics available for the current dataset.")
-        elif len(yearly_tone) < 5:
-            st.warning("Yearly tone trends are based on a small number of years; interpret cautiously.")
-        
-        fig = go.Figure()
-        
-        fig.add_trace(go.Scatter(
-            x=yearly_tone['year'],
-            y=yearly_tone['urgency_score_mean'],
-            mode='lines+markers',
-            name='Urgency Score',
-            line=dict(color='#e74c3c', width=2),
-            marker=dict(size=6)
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=yearly_tone['year'],
-            y=yearly_tone['sentiment_polarity_mean'],
-            mode='lines+markers',
-            name='Sentiment Polarity',
-            line=dict(color='#2ecc71', width=2),
-            marker=dict(size=6)
-        ))
-        
-        fig.update_layout(
-            title="Tone and Sentiment Trends Over Time",
-            xaxis_title="Year",
-            yaxis_title="Score",
-            hovermode='x unified',
-            height=400
-        )
-        
-        st.plotly_chart(fig, width='stretch')
-        render_data_basis_caption(run_meta, "Tone-sentiment yearly trend", point_count=len(yearly_tone) if isinstance(yearly_tone, pd.DataFrame) else None)
+            st.info("Fallback: Yearly trend visual is hidden because no valid yearly tone rows are available.")
+        elif not tone_charts_enabled:
+            st.info("Fallback: Yearly tone charts are disabled under the hard minimum-doc threshold.")
+            fallback_cols = [c for c in ['year', 'urgency_score_mean', 'sentiment_polarity_mean', 'urgency_score_std', 'sentiment_polarity_std'] if c in yearly_tone.columns]
+            if fallback_cols:
+                st.dataframe(yearly_tone[fallback_cols], width='stretch', hide_index=True)
+        else:
+            if len(yearly_tone) < 5:
+                st.warning("Yearly tone trends are based on a small number of years; interpret cautiously.")
+
+            yearly_counts = (
+                tone_df.assign(year=pd.to_numeric(tone_df['year'], errors='coerce'))
+                .dropna(subset=['year'])
+                .groupby('year')
+                .size()
+                .reset_index(name='documents')
+            )
+            yearly_counts['year'] = yearly_counts['year'].astype(int)
+
+            tone_trend_df = yearly_tone.copy()
+            tone_trend_df['year'] = pd.to_numeric(tone_trend_df['year'], errors='coerce').astype('Int64')
+            tone_trend_df = tone_trend_df.dropna(subset=['year']).copy()
+            tone_trend_df['year'] = tone_trend_df['year'].astype(int)
+            tone_trend_df = tone_trend_df.merge(yearly_counts, on='year', how='left')
+            tone_trend_df['documents'] = pd.to_numeric(tone_trend_df['documents'], errors='coerce').fillna(0).astype(int)
+
+            adequacy = compute_chart_adequacy(tone_trend_df, 'year', 'urgency_score_mean', min_years=4, min_points=8, min_variance=5e-5)
+            render_data_adequacy_badges('Tone yearly trend', adequacy)
+
+            if adequacy.get('low_info', False):
+                reasons = ", ".join(adequacy.get('reasons', []))
+                st.info(f"Fallback: Tone trend chart hidden due to low-information signal ({reasons}).")
+                fallback_cols = [c for c in ['year', 'documents', 'urgency_score_mean', 'sentiment_polarity_mean'] if c in tone_trend_df.columns]
+                if fallback_cols:
+                    st.dataframe(tone_trend_df[fallback_cols], width='stretch', hide_index=True)
+            else:
+                tone_trend_df['urgency_ci95'] = 1.96 * (
+                    pd.to_numeric(tone_trend_df.get('urgency_score_std', pd.Series([0.0] * len(tone_trend_df))), errors='coerce').fillna(0.0)
+                    / tone_trend_df['documents'].clip(lower=1).pow(0.5)
+                )
+                tone_trend_df['sentiment_ci95'] = 1.96 * (
+                    pd.to_numeric(tone_trend_df.get('sentiment_polarity_std', pd.Series([0.0] * len(tone_trend_df))), errors='coerce').fillna(0.0)
+                    / tone_trend_df['documents'].clip(lower=1).pow(0.5)
+                )
+
+                c_badge_1, c_badge_2, c_badge_3 = st.columns(3)
+                with c_badge_1:
+                    st.metric("Years in trend", int(tone_trend_df['year'].nunique()))
+                with c_badge_2:
+                    st.metric("Median docs/year", int(tone_trend_df['documents'].median()) if len(tone_trend_df) > 0 else 0)
+                with c_badge_3:
+                    st.metric("Min docs/year", int(tone_trend_df['documents'].min()) if len(tone_trend_df) > 0 else 0)
+
+                fig = go.Figure()
+
+                fig.add_trace(go.Scatter(
+                    x=tone_trend_df['year'],
+                    y=tone_trend_df['urgency_score_mean'] + tone_trend_df['urgency_ci95'],
+                    mode='lines',
+                    line=dict(width=0),
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+                fig.add_trace(go.Scatter(
+                    x=tone_trend_df['year'],
+                    y=tone_trend_df['urgency_score_mean'] - tone_trend_df['urgency_ci95'],
+                    mode='lines',
+                    line=dict(width=0),
+                    fill='tonexty',
+                    fillcolor='rgba(231,76,60,0.12)',
+                    name='Urgency 95% CI',
+                    hoverinfo='skip'
+                ))
+                fig.add_trace(go.Scatter(
+                    x=tone_trend_df['year'],
+                    y=tone_trend_df['urgency_score_mean'],
+                    mode='lines+markers+text',
+                    text=tone_trend_df['documents'],
+                    textposition='top center',
+                    name='Urgency Score',
+                    line=dict(color='#e74c3c', width=2),
+                    marker=dict(size=6)
+                ))
+
+                fig.add_trace(go.Scatter(
+                    x=tone_trend_df['year'],
+                    y=tone_trend_df['sentiment_polarity_mean'] + tone_trend_df['sentiment_ci95'],
+                    mode='lines',
+                    line=dict(width=0),
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+                fig.add_trace(go.Scatter(
+                    x=tone_trend_df['year'],
+                    y=tone_trend_df['sentiment_polarity_mean'] - tone_trend_df['sentiment_ci95'],
+                    mode='lines',
+                    line=dict(width=0),
+                    fill='tonexty',
+                    fillcolor='rgba(46,204,113,0.12)',
+                    name='Sentiment 95% CI',
+                    hoverinfo='skip'
+                ))
+                fig.add_trace(go.Scatter(
+                    x=tone_trend_df['year'],
+                    y=tone_trend_df['sentiment_polarity_mean'],
+                    mode='lines+markers',
+                    name='Sentiment Polarity',
+                    line=dict(color='#2ecc71', width=2),
+                    marker=dict(size=6)
+                ))
+
+                fig.update_layout(
+                    title="Tone and Sentiment Trends Over Time (95% confidence bands; labels=docs/year)",
+                    xaxis_title="Year",
+                    yaxis_title="Score",
+                    hovermode='x unified',
+                    height=420
+                )
+
+                st.plotly_chart(fig, width='stretch')
+                render_data_basis_caption(run_meta, "Tone-sentiment yearly trend", point_count=len(tone_trend_df))
 
         st.markdown("#### Signal")
         st.subheader("Yearly Tone Composition (stacked)")
@@ -1896,16 +2074,19 @@ def main():
                 .reset_index(name='documents')
             )
             if len(tone_year) > 0:
-                fig_tone_stack = px.bar(
-                    tone_year,
-                    x='year',
-                    y='documents',
-                    color='tone_class',
-                    barmode='stack',
-                    title='Tone class distribution by year',
-                )
-                st.plotly_chart(fig_tone_stack, width='stretch')
-                render_data_basis_caption(run_meta, "Tone stack by year", point_count=len(tone_year))
+                if tone_charts_enabled:
+                    fig_tone_stack = px.bar(
+                        tone_year,
+                        x='year',
+                        y='documents',
+                        color='tone_class',
+                        barmode='stack',
+                        title='Tone class distribution by year',
+                    )
+                    st.plotly_chart(fig_tone_stack, width='stretch')
+                    render_data_basis_caption(run_meta, "Tone stack by year", point_count=len(tone_year))
+                else:
+                    st.dataframe(tone_year, width='stretch', hide_index=True)
 
         if {'year', 'sentiment_class'}.issubset(set(tone_df.columns)):
             sentiment_year = (
@@ -1916,16 +2097,19 @@ def main():
                 .reset_index(name='documents')
             )
             if len(sentiment_year) > 0:
-                fig_sent_stack = px.bar(
-                    sentiment_year,
-                    x='year',
-                    y='documents',
-                    color='sentiment_class',
-                    barmode='stack',
-                    title='Sentiment class distribution by year',
-                )
-                st.plotly_chart(fig_sent_stack, width='stretch')
-                render_data_basis_caption(run_meta, "Sentiment stack by year", point_count=len(sentiment_year))
+                if tone_charts_enabled:
+                    fig_sent_stack = px.bar(
+                        sentiment_year,
+                        x='year',
+                        y='documents',
+                        color='sentiment_class',
+                        barmode='stack',
+                        title='Sentiment class distribution by year',
+                    )
+                    st.plotly_chart(fig_sent_stack, width='stretch')
+                    render_data_basis_caption(run_meta, "Sentiment stack by year", point_count=len(sentiment_year))
+                else:
+                    st.dataframe(sentiment_year, width='stretch', hide_index=True)
 
         st.subheader("External signals context")
         external_info = external_ctx.get("external_signals", {})
@@ -1934,12 +2118,13 @@ def main():
             if "provider" in signal_df.columns:
                 provider_counts = signal_df["provider"].fillna("unknown").astype(str).value_counts().reset_index()
                 provider_counts.columns = ["provider", "count"]
-                fig_provider = px.bar(provider_counts, x="provider", y="count", title="External Signals by Provider")
-                st.plotly_chart(fig_provider, width='stretch')
-                render_data_basis_caption(run_meta, "External provider distribution", point_count=len(provider_counts))
+                st.dataframe(provider_counts, width='stretch', hide_index=True)
 
             if "published_at" in signal_df.columns:
-                signal_df["published_at"] = pd.to_datetime(signal_df["published_at"], errors="coerce")
+                signal_df["published_at"] = (
+                    pd.to_datetime(signal_df["published_at"], errors="coerce", utc=True)
+                    .dt.tz_convert(None)
+                )
                 signal_df = signal_df.dropna(subset=["published_at"])
                 if len(signal_df) > 0:
                     signal_df["year"] = signal_df["published_at"].dt.year
@@ -1950,40 +2135,15 @@ def main():
                     yearly_counts["year_label"] = yearly_counts["year"].astype(int).astype(str)
 
                     if len(yearly_counts) >= 2:
-                        fig_signal_year = px.line(
-                            yearly_counts,
-                            x="year_label",
-                            y="count",
-                            markers=True,
-                            title="External Signals by Year",
-                        )
-                        fig_signal_year.update_layout(xaxis_title="Year", yaxis_title="Items")
-                        st.plotly_chart(fig_signal_year, width='stretch')
-                        render_data_basis_caption(run_meta, "External signals yearly", point_count=len(yearly_counts))
+                        st.dataframe(yearly_counts[["year_label", "count"]], width='stretch', hide_index=True)
                     elif len(yearly_counts) == 1:
-                        fig_signal_year = px.bar(
-                            yearly_counts,
-                            x="year_label",
-                            y="count",
-                            title="External Signals (single-year snapshot)",
-                        )
-                        fig_signal_year.update_layout(xaxis_title="Year", yaxis_title="Items")
-                        st.plotly_chart(fig_signal_year, width='stretch')
-                        render_data_basis_caption(run_meta, "External signals single-year", point_count=len(yearly_counts))
+                        st.dataframe(yearly_counts[["year_label", "count"]], width='stretch', hide_index=True)
                         st.caption("Only one year is available in the current external-signals file; trend interpretation is limited.")
 
-                        signal_df["month"] = signal_df["published_at"].dt.to_period("M").astype(str)
+                        signal_df["month"] = signal_df["published_at"].dt.strftime("%Y-%m")
                         monthly_counts = signal_df.groupby("month").size().reset_index(name="count").sort_values("month")
                         if len(monthly_counts) >= 2:
-                            fig_signal_month = px.bar(
-                                monthly_counts,
-                                x="month",
-                                y="count",
-                                title="External Signals by Month",
-                            )
-                            fig_signal_month.update_layout(xaxis_title="Month", yaxis_title="Items")
-                            st.plotly_chart(fig_signal_month, width='stretch')
-                            render_data_basis_caption(run_meta, "External signals monthly", point_count=len(monthly_counts))
+                            st.dataframe(monthly_counts, width='stretch', hide_index=True)
 
             st.caption(f"External signals source: {external_info.get('file_name', '')}")
         else:
@@ -2075,6 +2235,13 @@ def main():
                 "top_issue": "n/a",
             },
         )
+
+        thematic_charts_enabled = bool(len(processed_df) >= MIN_DOCS_CHART_HARD_GUARD)
+        if not thematic_charts_enabled:
+            st.warning(
+                f"Theme charts are disabled because filtered docs ({len(processed_df)}) are below the hard threshold ({MIN_DOCS_CHART_HARD_GUARD}).",
+                icon="⚠️",
+            )
         
         # Display discovered themes in a better format
         st.subheader("Discovered Themes")
@@ -2161,55 +2328,60 @@ def main():
             if topic_list:
                 for topic_id, prob in topic_list[:3]:
                     topic_year_data.append({'Year': year, 'Theme': f'Theme {topic_id}', 'ThemeWeight': prob})
-        
+
         if topic_year_data:
             topic_year_df = pd.DataFrame(topic_year_data)
-            fig = px.bar(
-                topic_year_df,
-                x='Year',
-                y='ThemeWeight',
-                color='Theme',
-                title='Themes by Year (Stacked)',
-                barmode='stack',
-                color_discrete_sequence=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
-            )
-            fig.update_layout(
-                xaxis_title='Year',
-                yaxis_title='Theme weight (relative)',
-                hovermode='x unified',
-                height=500
-            )
-            st.plotly_chart(fig, width='stretch')
-            render_data_basis_caption(run_meta, "Theme evolution (stacked)", point_count=len(topic_year_df))
+            topic_year_df['Year'] = pd.to_numeric(topic_year_df['Year'], errors='coerce')
+            topic_year_df['ThemeWeight'] = pd.to_numeric(topic_year_df['ThemeWeight'], errors='coerce')
 
-            try:
-                pivot = topic_year_df.pivot_table(index='Theme', columns='Year', values='ThemeWeight', aggfunc='mean', fill_value=0.0)
-                if isinstance(pivot, pd.DataFrame) and len(pivot) > 0:
-                    fig_heat = px.imshow(
-                        pivot,
-                        labels=dict(x="Year", y="Theme", color="Weight"),
-                        aspect="auto",
-                        title="Theme Intensity Heatmap (Year × Theme)",
-                        color_continuous_scale="Blues",
-                    )
-                    st.plotly_chart(fig_heat, width='stretch')
-                    render_data_basis_caption(run_meta, "Theme heatmap", point_count=int(pivot.size))
+            adequacy = compute_chart_adequacy(topic_year_df, 'Year', 'ThemeWeight', min_years=4, min_points=12, min_variance=5e-5)
+            render_data_adequacy_badges('Theme evolution', adequacy)
 
-                dominant = topic_year_df.sort_values('ThemeWeight', ascending=False).groupby('Year', as_index=False).first()
-                if len(dominant) > 0:
-                    fig_dom = px.line(
-                        dominant,
-                        x='Year',
-                        y='ThemeWeight',
-                        markers=True,
-                        color='Theme',
-                        title='Dominant Theme Strength by Year',
-                    )
-                    st.plotly_chart(fig_dom, width='stretch')
-                    render_data_basis_caption(run_meta, "Dominant theme trend", point_count=len(dominant))
-            except Exception:
-                st.caption("Advanced theme visuals unavailable for current slice.")
-            render_data_basis_caption(run_meta, "Theme evolution", point_count=len(topic_year_df))
+            dominance_avg = 0.0
+            if len(topic_year_df) > 0:
+                year_sum = topic_year_df.groupby('Year', as_index=False)['ThemeWeight'].sum().rename(columns={'ThemeWeight': 'sum_w'})
+                year_max = topic_year_df.groupby('Year', as_index=False)['ThemeWeight'].max().rename(columns={'ThemeWeight': 'max_w'})
+                dom = year_max.merge(year_sum, on='Year', how='left')
+                dom['dominance'] = dom['max_w'] / dom['sum_w'].replace(0, pd.NA)
+                dominance_avg = float(pd.to_numeric(dom['dominance'], errors='coerce').dropna().mean()) if len(dom) > 0 else 0.0
+
+            gate_reasons = list(adequacy.get('reasons', []))
+            if dominance_avg > 0.85:
+                gate_reasons.append(f"high dominance ({dominance_avg:.2f})")
+
+            if not thematic_charts_enabled:
+                gate_reasons.append(f"hard guard: docs < {MIN_DOCS_CHART_HARD_GUARD}")
+
+            if gate_reasons:
+                st.info(f"Fallback: Theme evolution charts hidden due to low-information signal ({', '.join(gate_reasons)}).")
+                fallback_theme = (
+                    topic_year_df.groupby('Theme', as_index=False)['ThemeWeight']
+                    .mean()
+                    .sort_values('ThemeWeight', ascending=False)
+                )
+                if len(fallback_theme) > 0:
+                    st.dataframe(fallback_theme, width='stretch', hide_index=True)
+            else:
+                fig = px.bar(
+                    topic_year_df,
+                    x='Year',
+                    y='ThemeWeight',
+                    color='Theme',
+                    title='Themes by Year (Stacked)',
+                    barmode='stack',
+                    color_discrete_sequence=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+                )
+                fig.update_layout(
+                    xaxis_title='Year',
+                    yaxis_title='Theme weight (relative)',
+                    hovermode='x unified',
+                    height=500
+                )
+                st.plotly_chart(fig, width='stretch')
+                render_data_basis_caption(run_meta, "Theme evolution (stacked)", point_count=len(topic_year_df))
+                render_data_basis_caption(run_meta, "Theme evolution", point_count=len(topic_year_df))
+        else:
+            st.info("Fallback: Theme evolution visual unavailable because no valid yearly theme points were produced.")
 
         st.subheader("External context snapshots")
         ogd_info = external_ctx.get("ogd_rows", {})
@@ -2233,9 +2405,7 @@ def main():
                     rss_df["items"] = pd.to_numeric(rss_df["items"], errors="coerce")
                     rss_df = rss_df.dropna(subset=["year", "items"]).sort_values("year")
                     if len(rss_df) > 0:
-                        fig_rss = px.bar(rss_df, x="year", y="items", title="RSS Items by Year")
-                        st.plotly_chart(fig_rss, width='stretch')
-                        render_data_basis_caption(run_meta, "RSS items by year", point_count=len(rss_df))
+                        st.dataframe(rss_df[["year", "items"]], width='stretch', hide_index=True)
                 st.caption(f"Source: {rss_info.get('file_name', '')}")
             else:
                 st.info("RSS summary output not found.")
@@ -2317,30 +2487,33 @@ def main():
                     st.caption(f"RSS items in {selected_year}: {int(year_match['items'].iloc[0])}")
         
         if len(year_data) > 0:
-            # Generate word cloud
+            # Summarize top terms for the selected year
             all_lemmas = []
             for lemmas in year_data['lemmas']:
                 if isinstance(lemmas, list):
                     all_lemmas.extend(lemmas)
             
             if all_lemmas:
-                # Create word cloud
-                wordcloud_text = ' '.join(all_lemmas)
-                
-                fig, ax = plt.subplots(figsize=(12, 6))
-                wc = WordCloud(
-                    width=1200,
-                    height=600,
-                    background_color='white',
-                    colormap='viridis'
-                ).generate(wordcloud_text)
-                
-                ax.imshow(wc, interpolation='bilinear')
-                ax.axis('off')
-                plt.tight_layout(pad=0)
-                
-                st.pyplot(fig)
-                render_data_basis_caption(run_meta, "Word cloud (selected year)", point_count=len(year_data))
+                top_terms = (
+                    pd.Series(all_lemmas)
+                    .astype(str)
+                    .str.strip()
+                    .replace("", pd.NA)
+                    .dropna()
+                    .value_counts()
+                    .head(20)
+                    .reset_index()
+                )
+                top_terms.columns = ["term", "count"]
+                fig_terms = px.bar(
+                    top_terms.sort_values("count", ascending=True),
+                    x="count",
+                    y="term",
+                    orientation="h",
+                    title=f"Top Terms in {selected_year}",
+                )
+                st.plotly_chart(fig_terms, width='stretch')
+                render_data_basis_caption(run_meta, "Top terms (selected year)", point_count=len(top_terms))
 
             if compare_mode and compare_year is not None:
                 compare_data = processed_df[processed_df['year'] == int(compare_year)]
@@ -2381,7 +2554,7 @@ def main():
         **How to read this page:**
         
         - **Slider:** Pick any year to see what was happening
-        - **Word cloud:** Bigger words = mentioned more often that year
+        - **Top terms chart:** Longer bars = mentioned more often that year
         - **Documents:** Actual text from that year's diplomatic meetings
         - **Try it:** Compare an early year vs a recent year to see how terms and focus change
         """)

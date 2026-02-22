@@ -111,6 +111,42 @@ def _build_dashboard_decision_hygiene(_df: pd.DataFrame, _scored_df: pd.DataFram
     return {"warnings": warnings, "notes": notes, "evidence": evidence_df}
 
 
+def _compute_chart_adequacy(
+    df: pd.DataFrame,
+    x_col: str,
+    y_col: str,
+    min_years: int = 4,
+    min_points: int = 8,
+    min_variance: float = 1e-4,
+) -> Dict[str, object]:
+    if not isinstance(df, pd.DataFrame) or len(df) == 0 or x_col not in df.columns or y_col not in df.columns:
+        return {"years": 0, "points": 0, "missing_pct": 100.0, "variance": 0.0, "low_info": True, "reasons": ["insufficient data"]}
+
+    working = df.copy()
+    missing_pct = float(working[[x_col, y_col]].isna().any(axis=1).mean() * 100.0)
+    working = working.dropna(subset=[x_col, y_col])
+    years = int(pd.to_numeric(working[x_col], errors="coerce").dropna().nunique())
+    points = int(len(working))
+    variance = float(pd.to_numeric(working[y_col], errors="coerce").dropna().var()) if points > 1 else 0.0
+
+    reasons = []
+    if years < min_years:
+        reasons.append(f"only {years} years")
+    if points < min_points:
+        reasons.append(f"only {points} points")
+    if variance < min_variance:
+        reasons.append("near-flat signal")
+
+    return {
+        "years": years,
+        "points": points,
+        "missing_pct": round(missing_pct, 1),
+        "variance": variance,
+        "low_info": len(reasons) > 0,
+        "reasons": reasons,
+    }
+
+
 def render_overview_page(ctx: Dict[str, Any]) -> None:
     st = ctx["st"]
     lang = ctx["lang"]
@@ -306,9 +342,8 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
                         {"window": "Prior 6d", "count": int(recency_split.get("prior_6d", 0))},
                     ]
                 )
-                fig_recency = px.pie(recency_df, values="count", names="window", title="Recency Mix (7d)", hole=0.45)
-                st.plotly_chart(fig_recency, width='stretch')
-                render_data_basis_caption(run_meta, "Live pulse recency mix", point_count=len(recency_df))
+                st.caption("Recency mix (7d)")
+                st.dataframe(recency_df, width='stretch', hide_index=True)
 
         provider_counts = pulse.get("provider_counts", {})
         if isinstance(provider_counts, dict) and provider_counts:
@@ -751,15 +786,57 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
 
         issue_trends_view = ctx["summarize_issue_trends"](processed_df)
         if isinstance(issue_trends_view, pd.DataFrame) and len(issue_trends_view) > 0:
-            fig_issue_trend = px.line(
-                issue_trends_view,
-                x="year",
-                y="documents",
-                color="issue",
-                title="Issue tag trends over time",
-                markers=True,
-            )
-            st.plotly_chart(fig_issue_trend, width='stretch')
+            trend_df = issue_trends_view.copy()
+            trend_df["year"] = pd.to_numeric(trend_df.get("year"), errors="coerce")
+            trend_df["documents"] = pd.to_numeric(trend_df.get("documents"), errors="coerce")
+            trend_df = trend_df.dropna(subset=["year", "documents", "issue"])
+
+            if len(trend_df) > 0:
+                top_n = 6
+                top_issues = (
+                    trend_df.groupby("issue", as_index=False)["documents"]
+                    .sum()
+                    .sort_values("documents", ascending=False)
+                    .head(top_n)["issue"]
+                    .astype(str)
+                    .tolist()
+                )
+                trend_df["issue_grouped"] = trend_df["issue"].astype(str).where(trend_df["issue"].astype(str).isin(top_issues), "Other")
+                grouped = (
+                    trend_df.groupby(["year", "issue_grouped"], as_index=False)["documents"]
+                    .sum()
+                    .sort_values(["year", "documents"], ascending=[True, False])
+                )
+
+                adequacy = _compute_chart_adequacy(grouped, "year", "documents", min_years=4, min_points=10, min_variance=1e-3)
+                st.caption("Data adequacy — Issue trends")
+                a1, a2, a3, a4 = st.columns(4)
+                with a1:
+                    st.metric("Years", int(adequacy.get("years", 0)))
+                with a2:
+                    st.metric("Points", int(adequacy.get("points", 0)))
+                with a3:
+                    st.metric("Missing %", f"{float(adequacy.get('missing_pct', 0.0)):.1f}")
+                with a4:
+                    st.metric("Variance", f"{float(adequacy.get('variance', 0.0)):.4f}")
+
+                if adequacy.get("low_info", False):
+                    reasons = ", ".join(adequacy.get("reasons", []))
+                    st.info(f"Fallback: Issue trend chart hidden due to low-information signal ({reasons}).")
+                    fallback = grouped.groupby("issue_grouped", as_index=False)["documents"].sum().sort_values("documents", ascending=False)
+                    st.dataframe(fallback, width='stretch', hide_index=True)
+                else:
+                    fig_issue_trend = px.line(
+                        grouped,
+                        x="year",
+                        y="documents",
+                        color="issue_grouped",
+                        title="Issue tag trends over time (Top issues + Other)",
+                        markers=True,
+                    )
+                    st.plotly_chart(fig_issue_trend, width='stretch')
+            else:
+                st.info("Fallback: Issue trend visual unavailable because trend rows are empty after cleaning.")
     else:
         st.info("No issue tags detected for the current filtered dataset.")
 
