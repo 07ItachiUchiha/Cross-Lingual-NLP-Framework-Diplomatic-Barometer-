@@ -188,30 +188,46 @@ class PDFReportGenerator:
             visual_data = analysis_data.get("visual_data", {}) if isinstance(analysis_data, dict) else {}
             chart_by_key: Dict[str, str] = {}
 
+            def _adequate_series(df: pd.DataFrame, x_col: str, y_col: str, min_years: int, min_points: int, min_variance: float) -> bool:
+                if not isinstance(df, pd.DataFrame) or len(df) == 0 or x_col not in df.columns or y_col not in df.columns:
+                    return False
+                working = df.copy().dropna(subset=[x_col, y_col])
+                if len(working) < min_points:
+                    return False
+                years = int(pd.to_numeric(working[x_col], errors="coerce").dropna().nunique())
+                if years < min_years:
+                    return False
+                variance = float(pd.to_numeric(working[y_col], errors="coerce").dropna().var()) if len(working) > 1 else 0.0
+                return variance >= min_variance
+
             def register_chart(key: str, path: Optional[str]) -> None:
                 if path:
                     chart_by_key[key] = path
 
             yearly_rows = visual_data.get("yearly_shift", []) if isinstance(visual_data, dict) else []
             if yearly_rows:
-                years = []
-                econ = []
-                sec = []
+                trend_rows = []
                 for r in yearly_rows:
                     try:
-                        y = int(r.get("year"))
-                        e = float(r.get("economic_score_mean"))
-                        s = float(r.get("security_score_mean"))
+                        trend_rows.append(
+                            {
+                                "year": int(r.get("year")),
+                                "economic": float(r.get("economic_score_mean")),
+                                "security": float(r.get("security_score_mean")),
+                            }
+                        )
                     except Exception:
                         continue
-                    years.append(y)
-                    econ.append(e)
-                    sec.append(s)
 
-                if years and econ and sec:
+                trend_df = pd.DataFrame(trend_rows)
+                if len(trend_df) > 0:
+                    trend_df = trend_df.sort_values("year")
+                    trend_df["gap"] = trend_df["security"] - trend_df["economic"]
+
+                if _adequate_series(trend_df, "year", "gap", min_years=4, min_points=4, min_variance=1e-5):
                     fig, ax = plt.subplots(figsize=(8.2, 3.4))
-                    ax.plot(years, econ, marker="o", label="Economic")
-                    ax.plot(years, sec, marker="o", label="Security")
+                    ax.plot(trend_df["year"].astype(int), trend_df["economic"], marker="o", label="Economic")
+                    ax.plot(trend_df["year"].astype(int), trend_df["security"], marker="o", label="Security")
                     ax.set_title("Economic vs Security Focus Over Time")
                     ax.set_xlabel("Year")
                     ax.set_ylabel("Average Score")
@@ -243,29 +259,37 @@ class PDFReportGenerator:
 
             q_rows = visual_data.get("quality_quarterly", []) if isinstance(visual_data, dict) else []
             if q_rows:
-                quarters = []
-                docs = []
+                q_points = []
                 for r in q_rows:
                     try:
-                        q = str(r.get("quarter"))
-                        d = float(r.get("documents"))
+                        q_points.append({"quarter": str(r.get("quarter")), "documents": float(r.get("documents"))})
                     except Exception:
                         continue
-                    quarters.append(q)
-                    docs.append(d)
 
-                if quarters and docs:
+                q_df = pd.DataFrame(q_points)
+                if isinstance(q_df, pd.DataFrame) and len(q_df) >= 4:
+                    q_df = q_df.sort_values("quarter").reset_index(drop=True)
                     fig, ax = plt.subplots(figsize=(8.2, 3.4))
-                    ax.plot(quarters, docs, marker="o")
+                    x_idx = list(range(len(q_df)))
+                    ax.bar(x_idx, q_df["documents"], color="#2E86AB", alpha=0.85, width=0.75)
+                    if len(q_df) >= 6:
+                        smooth = q_df["documents"].rolling(window=4, min_periods=1).mean()
+                        ax.plot(x_idx, smooth, color="#A23B72", linewidth=1.8, label="4Q moving average")
                     ax.set_title("Quarterly Document Coverage")
                     ax.set_xlabel("Quarter")
                     ax.set_ylabel("Documents")
-                    ax.tick_params(axis="x", rotation=45)
+                    tick_step = max(1, int(len(q_df) / 10))
+                    tick_idx = x_idx[::tick_step]
+                    if tick_idx and tick_idx[-1] != x_idx[-1]:
+                        tick_idx = tick_idx + [x_idx[-1]]
+                    ax.set_xticks(tick_idx)
+                    ax.set_xticklabels([str(q_df.loc[i, "quarter"]) for i in tick_idx], rotation=40, ha="right")
                     ax.grid(alpha=0.25)
+                    if len(q_df) >= 6:
+                        ax.legend(loc="upper left", fontsize=8)
                     img = self._save_plot_image(fig, "quality_coverage")
                     register_chart("03_quality", img)
 
-            tone_dist = visual_data.get("tone_distribution", {}) if isinstance(visual_data, dict) else {}
             issue_tag_counts = visual_data.get("issue_tag_counts", []) if isinstance(visual_data, dict) else []
             if isinstance(issue_tag_counts, list) and issue_tag_counts:
                 labels = []
@@ -305,94 +329,50 @@ class PDFReportGenerator:
                 if tmp_trends:
                     trend_df = pd.DataFrame(tmp_trends)
                     if len(trend_df) > 0:
-                        pivot = trend_df.pivot_table(index="year", columns="issue", values="documents", aggfunc="sum", fill_value=0.0).sort_index()
+                        top_n = 5
+                        top_issues = (
+                            trend_df.groupby("issue", as_index=False)["documents"]
+                            .sum()
+                            .sort_values("documents", ascending=False)
+                            .head(top_n)["issue"]
+                            .astype(str)
+                            .tolist()
+                        )
+                        trend_df["issue_grouped"] = trend_df["issue"].astype(str).where(trend_df["issue"].astype(str).isin(top_issues), "Other")
+                        grouped = trend_df.groupby(["year", "issue_grouped"], as_index=False)["documents"].sum()
+                        pivot = grouped.pivot_table(index="year", columns="issue_grouped", values="documents", aggfunc="sum", fill_value=0.0).sort_index()
                         if len(pivot) > 0:
-                            top_issues = pivot.sum(axis=0).sort_values(ascending=False).head(4).index.tolist()
-                            fig, ax = plt.subplots(figsize=(8.2, 3.2))
-                            category_colors = {
-                                "security": "#A23B72",
-                                "economy": "#2E86AB",
-                                "social": "#2CA58D",
-                                "governance": "#6C757D",
-                            }
-                            style_cycle = ["-", "--", "-.", ":"]
-                            for issue in top_issues:
-                                category = self._classify_issue_group(str(issue))
-                                color = category_colors.get(category, "#6C757D")
-                                style = style_cycle[top_issues.index(issue) % len(style_cycle)]
-                                ax.plot(
-                                    pivot.index.astype(int),
-                                    pivot[issue].values,
-                                    marker="o",
-                                    linestyle=style,
-                                    color=color,
-                                    label=f"{issue} ({category})",
-                                )
-                            ax.set_title("Issue Tag Trends by Year")
-                            ax.set_xlabel("Year")
-                            ax.set_ylabel("Documents")
-                            ax.grid(alpha=0.25)
-                            if top_issues:
-                                ax.legend(loc="best", fontsize=8)
-                            img = self._save_plot_image(fig, "issue_tag_trends")
-                            register_chart("05_issue_trends", img)
-
-            if isinstance(tone_dist, dict) and len(tone_dist) > 0:
-                labels = []
-                values = []
-                for k, v in tone_dist.items():
-                    try:
-                        labels.append(str(k))
-                        values.append(float(v))
-                    except Exception:
-                        continue
-                if labels and values:
-                    fig, ax = plt.subplots(figsize=(8.2, 3.2))
-                    ax.bar(labels, values)
-                    ax.set_title("Tone Distribution")
-                    ax.set_ylabel("Documents")
-                    ax.grid(axis="y", alpha=0.25)
-                    img = self._save_plot_image(fig, "tone_distribution")
-                    register_chart("06_tone", img)
-
-            sentiment_dist = visual_data.get("sentiment_distribution", {}) if isinstance(visual_data, dict) else {}
-            if isinstance(sentiment_dist, dict) and len(sentiment_dist) > 0:
-                labels = []
-                values = []
-                for k, v in sentiment_dist.items():
-                    try:
-                        labels.append(str(k))
-                        values.append(float(v))
-                    except Exception:
-                        continue
-                if labels and values:
-                    fig, ax = plt.subplots(figsize=(8.2, 3.2))
-                    ax.bar(labels, values)
-                    ax.set_title("Sentiment Distribution")
-                    ax.set_ylabel("Documents")
-                    ax.grid(axis="y", alpha=0.25)
-                    img = self._save_plot_image(fig, "sentiment_distribution")
-                    register_chart("07_sentiment", img)
-
-            theme_term_frequency = visual_data.get("theme_term_frequency", {}) if isinstance(visual_data, dict) else {}
-            if isinstance(theme_term_frequency, dict) and len(theme_term_frequency) > 0:
-                labels = []
-                values = []
-                for k, v in theme_term_frequency.items():
-                    try:
-                        labels.append(str(k))
-                        values.append(float(v))
-                    except Exception:
-                        continue
-                if labels and values:
-                    fig, ax = plt.subplots(figsize=(8.2, 3.4))
-                    ax.barh(labels, values)
-                    ax.set_title("Top Strategic Theme Terms")
-                    ax.set_xlabel("Topic Presence Count")
-                    ax.invert_yaxis()
-                    ax.grid(axis="x", alpha=0.25)
-                    img = self._save_plot_image(fig, "theme_term_frequency")
-                    register_chart("08_theme_terms", img)
+                            pivot_for_adequacy = grouped.groupby("year", as_index=False)["documents"].sum()
+                            if _adequate_series(pivot_for_adequacy, "year", "documents", min_years=4, min_points=4, min_variance=1e-3):
+                                series_order = pivot.sum(axis=0).sort_values(ascending=False).index.tolist()
+                                fig, ax = plt.subplots(figsize=(8.2, 3.2))
+                                category_colors = {
+                                    "security": "#A23B72",
+                                    "economy": "#2E86AB",
+                                    "social": "#2CA58D",
+                                    "governance": "#6C757D",
+                                }
+                                style_cycle = ["-", "--", "-.", ":", (0, (3, 1, 1, 1))]
+                                for idx, issue in enumerate(series_order):
+                                    category = self._classify_issue_group(str(issue))
+                                    color = "#6C757D" if str(issue) == "Other" else category_colors.get(category, "#6C757D")
+                                    style = style_cycle[idx % len(style_cycle)]
+                                    ax.plot(
+                                        pivot.index.astype(int),
+                                        pivot[issue].values,
+                                        marker="o",
+                                        linestyle=style,
+                                        color=color,
+                                        label=f"{issue}",
+                                    )
+                                ax.set_title("Issue Tag Trends by Year (Top Issues + Other)")
+                                ax.set_xlabel("Year")
+                                ax.set_ylabel("Documents")
+                                ax.grid(alpha=0.25)
+                                if series_order:
+                                    ax.legend(loc="best", fontsize=8)
+                                img = self._save_plot_image(fig, "issue_tag_trends")
+                                register_chart("05_issue_trends", img)
 
             theme_evolution = visual_data.get("theme_evolution", []) if isinstance(visual_data, dict) else []
             if isinstance(theme_evolution, list) and theme_evolution:
@@ -410,16 +390,33 @@ class PDFReportGenerator:
                     evol_df = pd.DataFrame(tmp)
                     piv = evol_df.pivot_table(index="year", columns="theme", values="weight", aggfunc="mean", fill_value=0.0).sort_index()
                     if len(piv) > 0:
+                        stacked_view = evol_df.groupby(["year", "theme"], as_index=False)["weight"].mean()
+                        if not _adequate_series(stacked_view, "year", "weight", min_years=4, min_points=8, min_variance=1e-5):
+                            piv = pd.DataFrame()
+
+                    if len(piv) > 0:
+                        dominance = piv.max(axis=1) / piv.sum(axis=1).replace(0, pd.NA)
+                        dominance_avg = float(pd.to_numeric(dominance, errors="coerce").dropna().mean()) if len(dominance) > 0 else 0.0
+                        if dominance_avg > 0.85:
+                            piv = pd.DataFrame()
+
+                    if len(piv) > 0:
+                        theme_order = piv.mean(axis=0).sort_values(ascending=False).index.tolist()[:5]
+                        plot_df = piv[theme_order].copy()
                         fig, ax = plt.subplots(figsize=(8.2, 3.2))
-                        for col in piv.columns[:5]:
-                            ax.plot(piv.index.astype(int), piv[col].values, marker="o", label=str(col))
-                        ax.set_title("Theme Evolution by Year")
+                        ax.stackplot(
+                            plot_df.index.astype(int),
+                            [plot_df[c].values for c in plot_df.columns],
+                            labels=[str(c) for c in plot_df.columns],
+                            alpha=0.8,
+                        )
+                        ax.set_title("Theme Evolution by Year (Top Themes)")
                         ax.set_xlabel("Year")
                         ax.set_ylabel("Theme Weight")
                         ax.grid(alpha=0.25)
                         ax.legend(loc="best", fontsize=8)
                         img = self._save_plot_image(fig, "theme_evolution")
-                        register_chart("09_theme_evolution", img)
+                        register_chart("06_theme_evolution", img)
 
             pulse_daily_counts = visual_data.get("pulse_daily_counts", []) if isinstance(visual_data, dict) else []
             if isinstance(pulse_daily_counts, list) and pulse_daily_counts:
@@ -432,29 +429,17 @@ class PDFReportGenerator:
                     except Exception:
                         continue
                 if x and y:
-                    fig, ax = plt.subplots(figsize=(8.2, 3.0))
-                    ax.plot(x, y, marker="o")
-                    ax.fill_between(x, y, alpha=0.2)
-                    ax.set_title("Live Geopolitical Pulse: 7-Day Activity Trend")
-                    ax.set_ylabel("Event Count")
-                    ax.tick_params(axis="x", rotation=30)
-                    ax.grid(axis="y", alpha=0.25)
-                    img = self._save_plot_image(fig, "pulse_daily_trend")
-                    register_chart("10_pulse_trend", img)
-
-            pulse_recency_split = visual_data.get("pulse_recency_split", {}) if isinstance(visual_data, dict) else {}
-            if isinstance(pulse_recency_split, dict) and pulse_recency_split:
-                labels = ["Last 24h", "Prior 6d"]
-                vals = [
-                    float(pulse_recency_split.get("last_24h", 0) or 0),
-                    float(pulse_recency_split.get("prior_6d", 0) or 0),
-                ]
-                if sum(vals) > 0:
-                    fig, ax = plt.subplots(figsize=(8.2, 3.0))
-                    ax.pie(vals, labels=labels, autopct="%1.0f%%", startangle=90, wedgeprops={"width": 0.45})
-                    ax.set_title("Live Geopolitical Pulse: Recency Mix")
-                    img = self._save_plot_image(fig, "pulse_recency_mix")
-                    register_chart("11_pulse_mix", img)
+                    pulse_df = pd.DataFrame({"i": list(range(len(y))), "count": y})
+                    if _adequate_series(pulse_df, "i", "count", min_years=1, min_points=4, min_variance=1e-3):
+                        fig, ax = plt.subplots(figsize=(8.2, 3.0))
+                        ax.plot(x, y, marker="o")
+                        ax.fill_between(x, y, alpha=0.2)
+                        ax.set_title("Live Geopolitical Pulse: 7-Day Activity Trend")
+                        ax.set_ylabel("Event Count")
+                        ax.tick_params(axis="x", rotation=30)
+                        ax.grid(axis="y", alpha=0.25)
+                        img = self._save_plot_image(fig, "pulse_daily_trend")
+                        register_chart("07_pulse_trend", img)
 
             ordered_keys = [
                 "01_strategic_trend",
@@ -462,12 +447,8 @@ class PDFReportGenerator:
                 "03_quality",
                 "04_issue_tags",
                 "05_issue_trends",
-                "06_tone",
-                "07_sentiment",
-                "08_theme_terms",
-                "09_theme_evolution",
-                "10_pulse_trend",
-                "11_pulse_mix",
+                "06_theme_evolution",
+                "07_pulse_trend",
             ]
             images = [chart_by_key[k] for k in ordered_keys if k in chart_by_key]
 
@@ -638,8 +619,8 @@ class PDFReportGenerator:
             if include_visualizations:
                 chart_images = self._build_chart_images(analysis_data)
                 if chart_images:
-                    story.append(Paragraph("Key Visualizations", heading_style))
-                    for img_path in chart_images[:11]:
+                    story.append(Paragraph("Key Decision Visuals", heading_style))
+                    for img_path in chart_images[:7]:
                         try:
                             story.append(Image(img_path, width=7.0 * inch, height=2.9 * inch))
                             story.append(Spacer(1, 0.12 * inch))
@@ -790,12 +771,28 @@ class PDFReportGenerator:
                 if isinstance(top_events, list) and len(top_events) > 0:
                     story.append(Paragraph("Top events (7d):", styles['Normal']))
                     evt_style = ParagraphStyle('PulseEvent', parent=styles['Normal'], leftIndent=20, bulletIndent=10)
-                    for row in top_events[:5]:
-                        evt = (
-                            f"[{row.get('provider', '')}] {row.get('title', '')} "
-                            f"({row.get('published_at', '')})"
-                        )
+                    seen_event_keys = set()
+                    rendered = 0
+                    for row in top_events:
+                        provider = str(row.get('provider', '') or '').strip()
+                        title = str(row.get('title', '') or '').strip()
+                        published = str(row.get('published_at', '') or '').strip()
+                        url = str(row.get('url', '') or '').strip().lower()
+
+                        if not title:
+                            continue
+
+                        title_norm = " ".join(title.lower().split())
+                        event_key = url if url else f"{provider}|{title_norm}"
+                        if event_key in seen_event_keys:
+                            continue
+                        seen_event_keys.add(event_key)
+
+                        evt = f"[{provider}] {title} ({published})"
                         story.append(Paragraph(evt, evt_style, bulletText=chr(8226)))
+                        rendered += 1
+                        if rendered >= 8:
+                            break
             
             # Footer
             story.append(Spacer(1, 0.5*inch))

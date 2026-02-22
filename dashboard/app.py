@@ -458,17 +458,65 @@ def build_live_geopolitical_pulse(external_ctx: Dict) -> Dict:
 
     top_events = []
     if len(recent_7d) > 0:
-        cols = [c for c in ["published_at", "provider", "source_name", "title", "url"] if c in recent_7d.columns]
-        for _, row in recent_7d.sort_values("published_at", ascending=False).head(5)[cols].iterrows():
-            top_events.append(
-                {
-                    "published_at": str(row.get("published_at", "")),
-                    "provider": str(row.get("provider", "")),
-                    "source_name": str(row.get("source_name", "")),
-                    "title": str(row.get("title", "")),
-                    "url": str(row.get("url", "")),
-                }
+        events_df = recent_7d.copy()
+        events_df["provider"] = events_df.get("provider", pd.Series(["unknown"] * len(events_df))).fillna("unknown").astype(str).str.strip()
+        events_df["source_name"] = events_df.get("source_name", pd.Series([""] * len(events_df))).fillna("").astype(str).str.strip()
+        events_df["title"] = events_df.get("title", pd.Series([""] * len(events_df))).fillna("").astype(str).str.strip()
+        events_df["url"] = events_df.get("url", pd.Series([""] * len(events_df))).fillna("").astype(str).str.strip()
+        events_df = events_df[events_df["title"].str.len() > 0].copy()
+
+        if len(events_df) > 0:
+            events_df["title_norm"] = (
+                events_df["title"]
+                .str.lower()
+                .str.replace(r"\s+", " ", regex=True)
+                .str.replace(r"[^a-z0-9 ]", "", regex=True)
+                .str.strip()
             )
+            events_df["url_norm"] = events_df["url"].str.lower().str.strip()
+            events_df["event_key"] = events_df.apply(
+                lambda r: r["url_norm"] if r["url_norm"] else r["title_norm"],
+                axis=1,
+            )
+            events_df = events_df.sort_values("published_at", ascending=False)
+            events_df = events_df.drop_duplicates(subset=["event_key"], keep="first")
+
+            max_events = 8
+            chosen = []
+            used_keys = set()
+            providers = [p for p in events_df["provider"].dropna().unique().tolist() if str(p).strip()]
+
+            for provider in providers:
+                cand = events_df[events_df["provider"] == provider].head(1)
+                if len(cand) > 0:
+                    row = cand.iloc[0]
+                    key = str(row.get("event_key", "")).strip()
+                    if key and key not in used_keys:
+                        chosen.append(row)
+                        used_keys.add(key)
+                    if len(chosen) >= max_events:
+                        break
+
+            if len(chosen) < max_events:
+                for _, row in events_df.iterrows():
+                    key = str(row.get("event_key", "")).strip()
+                    if not key or key in used_keys:
+                        continue
+                    chosen.append(row)
+                    used_keys.add(key)
+                    if len(chosen) >= max_events:
+                        break
+
+            for row in chosen:
+                top_events.append(
+                    {
+                        "published_at": str(row.get("published_at", "")),
+                        "provider": str(row.get("provider", "")),
+                        "source_name": str(row.get("source_name", "")),
+                        "title": str(row.get("title", "")),
+                        "url": str(row.get("url", "")),
+                    }
+                )
 
     daily_counts_7d = []
     if len(recent_7d) > 0:
@@ -874,6 +922,125 @@ def render_data_basis_caption(run_meta: Dict[str, str], chart_label: str, point_
     )
 
 
+def build_pdf_analysis_payload(
+    processed_df: pd.DataFrame,
+    bundle: Dict,
+    external_ctx: Dict,
+    role_profile: str,
+) -> Dict:
+    report = bundle.get("report", {})
+    yearly_df = bundle.get("yearly_df", pd.DataFrame())
+    stats_result = bundle.get("stats_result", {})
+    confidence_summary = bundle.get("confidence_summary", {})
+    trigger_rows = bundle.get("trigger_rows", [])
+    decision_rows = bundle.get("decision_rows", [])
+    q_summary_df = bundle.get("q_summary_df", pd.DataFrame())
+    quality_meta = bundle.get("q_meta", {})
+    thematic_pdf_analysis = bundle.get("thematic_analysis", {})
+    issue_counts_pdf = bundle.get("issue_counts_df", pd.DataFrame())
+    issue_trends_pdf = bundle.get("issue_trends_df", pd.DataFrame())
+    tone_pdf_df = bundle.get("tone_df", pd.DataFrame())
+
+    tone_distribution = {}
+    if isinstance(tone_pdf_df, pd.DataFrame) and "tone_class" in tone_pdf_df.columns:
+        tone_distribution = tone_pdf_df["tone_class"].fillna("Unknown").astype(str).value_counts().to_dict()
+
+    sentiment_distribution = {}
+    if isinstance(tone_pdf_df, pd.DataFrame) and "sentiment_class" in tone_pdf_df.columns:
+        sentiment_distribution = tone_pdf_df["sentiment_class"].fillna("Unknown").astype(str).value_counts().to_dict()
+
+    yearly_shift_records = []
+    if isinstance(yearly_df, pd.DataFrame) and len(yearly_df) > 0:
+        cols = [c for c in ["year", "economic_score_mean", "security_score_mean"] if c in yearly_df.columns]
+        if cols:
+            yearly_shift_records = yearly_df[cols].to_dict(orient="records")
+
+    quality_quarterly_records = []
+    if isinstance(q_summary_df, pd.DataFrame) and len(q_summary_df) > 0:
+        qcols = [c for c in ["quarter", "documents", "missing_url_pct"] if c in q_summary_df.columns]
+        if qcols:
+            quality_quarterly_records = q_summary_df[qcols].to_dict(orient="records")
+
+    issue_tag_records = []
+    if isinstance(issue_counts_pdf, pd.DataFrame) and len(issue_counts_pdf) > 0:
+        icols = [c for c in ["issue", "documents"] if c in issue_counts_pdf.columns]
+        if icols:
+            issue_tag_records = issue_counts_pdf[icols].head(12).to_dict(orient="records")
+
+    issue_trend_records = []
+    if isinstance(issue_trends_pdf, pd.DataFrame) and len(issue_trends_pdf) > 0:
+        itcols = [c for c in ["year", "issue", "documents"] if c in issue_trends_pdf.columns]
+        if len(itcols) == 3:
+            issue_trend_records = issue_trends_pdf[itcols].to_dict(orient="records")
+
+    theme_evolution_records = []
+    if isinstance(thematic_pdf_analysis, dict):
+        dist = thematic_pdf_analysis.get("topic_weights_by_year") or thematic_pdf_analysis.get("topic_distribution_by_year") or {}
+        if isinstance(dist, dict):
+            for year, topic_list in dist.items():
+                if isinstance(topic_list, list):
+                    for item in topic_list[:5]:
+                        try:
+                            topic_id, prob = item
+                            theme_evolution_records.append({
+                                "year": int(year),
+                                "theme": f"Theme {topic_id}",
+                                "weight": float(prob),
+                            })
+                        except Exception:
+                            continue
+
+    live_pulse = build_live_geopolitical_pulse(external_ctx)
+
+    safe_start = str(pd.to_datetime(processed_df.get("date", pd.Series(dtype=str)), errors="coerce").min())
+    safe_end = str(pd.to_datetime(processed_df.get("date", pd.Series(dtype=str)), errors="coerce").max())
+
+    return {
+        "metadata": {
+            "total_documents": len(processed_df),
+            "date_range": {"start": safe_start, "end": safe_end},
+            "audience_profile": role_profile,
+        },
+        "strategic_shift": {
+            "total_documents": len(processed_df),
+            "date_range": [safe_start, safe_end],
+            "overall_economic_avg": float(report.get("overall_economic_avg", 0.0)),
+            "overall_security_avg": float(report.get("overall_security_avg", 0.0)),
+            "economic_focus_avg": float(report.get("overall_economic_avg", 0.0)),
+            "security_focus_avg": float(report.get("overall_security_avg", 0.0)),
+            "crossover_year": report.get("crossover_year"),
+            "trend": report.get("trend", "Unknown"),
+            "statistical_significance": stats_result or report.get("statistical_significance", {}),
+            "trend_analysis": report.get("trend_analysis", {}),
+        },
+        "confidence_summary": confidence_summary,
+        "policy_triggers": trigger_rows,
+        "decision_options": decision_rows,
+        "quality_audit": quality_meta,
+        "thematic_analysis": {
+            "num_topics": int((thematic_pdf_analysis or {}).get("n_topics", 0)) if isinstance(thematic_pdf_analysis, dict) else 0,
+            "themes": list((thematic_pdf_analysis or {}).get("overall_themes", {}).keys())[:8] if isinstance(thematic_pdf_analysis, dict) else [],
+        },
+        "live_pulse": live_pulse,
+        "visual_data": {
+            "yearly_shift": yearly_shift_records,
+            "tone_distribution": tone_distribution,
+            "sentiment_distribution": sentiment_distribution,
+            "quality_quarterly": quality_quarterly_records,
+            "issue_tag_counts": issue_tag_records,
+            "issue_tag_trends": issue_trend_records,
+            "theme_evolution": theme_evolution_records,
+            "pulse_windows": {
+                "last_24h": live_pulse.get("count_24h", 0),
+                "last_7d": live_pulse.get("count_7d", 0),
+            },
+            "pulse_provider_counts": live_pulse.get("provider_counts", {}),
+            "pulse_daily_counts": live_pulse.get("daily_counts_7d", []),
+            "pulse_recency_split": live_pulse.get("recency_split", {}),
+        },
+    }
+
+
 def compute_chart_adequacy(
     df: pd.DataFrame,
     x_col: str,
@@ -1244,7 +1411,8 @@ def main():
                 default=default_issue_tags,
                 key="issue_tags_filter",
             )
-            if selected_issue_tags:
+            apply_issue_filter = 0 < len(selected_issue_tags) < len(all_issue_tags)
+            if apply_issue_filter:
                 processed_df = processed_df[
                     processed_df["issue_tags"].map(
                         lambda tags: isinstance(tags, list) and any(tag in selected_issue_tags for tag in tags)
@@ -1274,7 +1442,8 @@ def main():
                 default=all_regions,
                 key="equity_regions_filter",
             )
-            if selected_regions:
+            apply_region_filter = 0 < len(selected_regions) < len(all_regions)
+            if apply_region_filter:
                 processed_df = processed_df[
                     processed_df["equity_regions"].map(
                         lambda tags: isinstance(tags, list) and any(tag in selected_regions for tag in tags)
@@ -1304,7 +1473,8 @@ def main():
                 default=all_groups,
                 key="equity_groups_filter",
             )
-            if selected_groups:
+            apply_group_filter = 0 < len(selected_groups) < len(all_groups)
+            if apply_group_filter:
                 processed_df = processed_df[
                     processed_df["equity_groups"].map(
                         lambda tags: isinstance(tags, list) and any(tag in selected_groups for tag in tags)
@@ -1381,121 +1551,28 @@ def main():
     # PDF Export button in sidebar
     if REPORTLAB_AVAILABLE:
         st.sidebar.subheader("Export Report")
+        pdf_scope = st.sidebar.selectbox(
+            "PDF scope",
+            ["Active filtered view", "Full corpus (ignore sidebar filters)"],
+            index=0,
+            key="pdf_scope_selector",
+        )
         if st.sidebar.button("Download PDF Report", type="primary"):
             with st.spinner("Generating PDF report..."):
                 try:
-                    bundle = get_analysis_bundle(include_tone_theme=True)
-                    report = bundle.get("report", {})
-                    scored_df = bundle.get("scored_df", pd.DataFrame())
-                    yearly_df = bundle.get("yearly_df", pd.DataFrame())
-                    stats_result = bundle.get("stats_result", {})
-                    confidence_summary = bundle.get("confidence_summary", {})
-                    trigger_rows = bundle.get("trigger_rows", [])
-                    decision_rows = bundle.get("decision_rows", [])
-                    q_summary_df = bundle.get("q_summary_df", pd.DataFrame())
-                    quality_meta = bundle.get("q_meta", {})
-                    live_pulse = build_live_geopolitical_pulse(external_ctx)
-                    thematic_pdf_analysis = bundle.get("thematic_analysis", {})
-                    issue_counts_pdf = bundle.get("issue_counts_df", pd.DataFrame())
-                    issue_trends_pdf = bundle.get("issue_trends_df", pd.DataFrame())
+                    if pdf_scope == "Full corpus (ignore sidebar filters)":
+                        pdf_df = baseline_processed_df.copy() if isinstance(baseline_processed_df, pd.DataFrame) else processed_df.copy()
+                        pdf_bundle = build_analysis_bundle(pdf_df, external_ctx, include_tone_theme=True)
+                    else:
+                        pdf_df = processed_df.copy()
+                        pdf_bundle = get_analysis_bundle(include_tone_theme=True)
 
-                    tone_distribution = {}
-                    try:
-                        tone_pdf_df = bundle.get("tone_df", pd.DataFrame())
-                        if isinstance(tone_pdf_df, pd.DataFrame) and "tone_class" in tone_pdf_df.columns:
-                            tone_distribution = (
-                                tone_pdf_df["tone_class"].fillna("Unknown").astype(str).value_counts().to_dict()
-                            )
-                    except Exception:
-                        tone_distribution = {}
-
-                    yearly_shift_records = []
-                    if isinstance(yearly_df, pd.DataFrame) and len(yearly_df) > 0:
-                        cols = [c for c in ["year", "economic_score_mean", "security_score_mean"] if c in yearly_df.columns]
-                        if cols:
-                            yearly_shift_records = yearly_df[cols].to_dict(orient="records")
-
-                    quality_quarterly_records = []
-                    if isinstance(q_summary_df, pd.DataFrame) and len(q_summary_df) > 0:
-                        qcols = [c for c in ["quarter", "documents", "missing_url_pct"] if c in q_summary_df.columns]
-                        if qcols:
-                            quality_quarterly_records = q_summary_df[qcols].to_dict(orient="records")
-
-                    issue_tag_records = []
-                    if isinstance(issue_counts_pdf, pd.DataFrame) and len(issue_counts_pdf) > 0:
-                        icols = [c for c in ["issue", "documents"] if c in issue_counts_pdf.columns]
-                        if icols:
-                            issue_tag_records = issue_counts_pdf[icols].head(12).to_dict(orient="records")
-
-                    issue_trend_records = []
-                    if isinstance(issue_trends_pdf, pd.DataFrame) and len(issue_trends_pdf) > 0:
-                        itcols = [c for c in ["year", "issue", "documents"] if c in issue_trends_pdf.columns]
-                        if len(itcols) == 3:
-                            issue_trend_records = issue_trends_pdf[itcols].to_dict(orient="records")
-
-                    theme_evolution_records = []
-                    if isinstance(thematic_pdf_analysis, dict):
-                        dist = thematic_pdf_analysis.get('topic_weights_by_year') or thematic_pdf_analysis.get('topic_distribution_by_year') or {}
-                        if isinstance(dist, dict):
-                            for year, topic_list in dist.items():
-                                if isinstance(topic_list, list):
-                                    for item in topic_list[:5]:
-                                        try:
-                                            topic_id, prob = item
-                                            theme_evolution_records.append({
-                                                "year": int(year),
-                                                "theme": f"Theme {topic_id}",
-                                                "weight": float(prob),
-                                            })
-                                        except Exception:
-                                            continue
-
-                    safe_start = str(pd.to_datetime(processed_df.get('date', pd.Series(dtype=str)), errors='coerce').min())
-                    safe_end = str(pd.to_datetime(processed_df.get('date', pd.Series(dtype=str)), errors='coerce').max())
-
-                    analysis_data = {
-                        'metadata': {
-                            'total_documents': len(processed_df),
-                            'date_range': {'start': safe_start, 'end': safe_end},
-                            'audience_profile': role_profile,
-                        },
-                        'strategic_shift': {
-                            'total_documents': len(processed_df),
-                            'date_range': [safe_start, safe_end],
-                            'overall_economic_avg': float(report['overall_economic_avg']),
-                            'overall_security_avg': float(report['overall_security_avg']),
-                            'economic_focus_avg': float(report['overall_economic_avg']),
-                            'security_focus_avg': float(report['overall_security_avg']),
-                            'crossover_year': report['crossover_year'],
-                            'trend': report['trend'],
-                            'statistical_significance': stats_result or report.get('statistical_significance', {}),
-                            'trend_analysis': report.get('trend_analysis', {}),
-                        },
-                        'confidence_summary': confidence_summary,
-                        'policy_triggers': trigger_rows,
-                        'decision_options': decision_rows,
-                        'quality_audit': quality_meta,
-                        'thematic_analysis': {
-                            'num_topics': int((thematic_pdf_analysis or {}).get('n_topics', 0)) if isinstance(thematic_pdf_analysis, dict) else 0,
-                            'themes': list((thematic_pdf_analysis or {}).get('overall_themes', {}).keys())[:8] if isinstance(thematic_pdf_analysis, dict) else [],
-                        },
-                        'live_pulse': live_pulse,
-                        'visual_data': {
-                            'yearly_shift': yearly_shift_records,
-                            'tone_distribution': tone_distribution,
-                            'quality_quarterly': quality_quarterly_records,
-                            'issue_tag_counts': issue_tag_records,
-                            'issue_tag_trends': issue_trend_records,
-                            'theme_evolution': theme_evolution_records,
-                            'pulse_windows': {
-                                'last_24h': live_pulse.get('count_24h', 0),
-                                'last_7d': live_pulse.get('count_7d', 0),
-                            },
-                            'pulse_provider_counts': live_pulse.get('provider_counts', {}),
-                            'pulse_daily_counts': live_pulse.get('daily_counts_7d', []),
-                            'pulse_recency_split': live_pulse.get('recency_split', {}),
-                        },
-                    }
+                    analysis_data = build_pdf_analysis_payload(
+                        processed_df=pdf_df,
+                        bundle=pdf_bundle,
+                        external_ctx=external_ctx,
+                        role_profile=role_profile,
+                    )
                     
                     pdf_gen = PDFReportGenerator()
                     tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
