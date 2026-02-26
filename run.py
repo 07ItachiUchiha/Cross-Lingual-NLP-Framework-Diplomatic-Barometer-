@@ -518,6 +518,42 @@ def run_build_official_corpus(
         sys.exit(1)
 
 
+def run_build_india_france_corpus(
+    start_year: int = 2000,
+    end_year: int = 2026,
+    max_docs: int = 500,
+    max_urls_per_year: int = 80,
+    min_content_chars: int = 850,
+):
+    """Build India–France corpus and write to pair-specific raw CSV files."""
+    print("\n[CORPUS] Building India–France corpus via GDELT + official-site fallback...")
+    print("-" * 70)
+    try:
+        from scrapers.india_france_corpus_builder import IndiaFranceCorpusBuilder, IndiaFranceBuildConfig
+
+        builder = IndiaFranceCorpusBuilder()
+        cfg = IndiaFranceBuildConfig(
+            start_year=int(start_year),
+            end_year=int(end_year),
+            max_docs_total=int(max_docs),
+            max_urls_per_year=int(max_urls_per_year),
+            min_content_chars=int(min_content_chars),
+        )
+        result = builder.build(cfg)
+        builder.close()
+
+        report = result.get("report", {})
+        outputs = report.get("outputs", {})
+        print(f"  Docs kept:   {report.get('total_docs_kept', 0)}")
+        print(f"  Source split:{report.get('source_split', {})}")
+        print(f"  Primary CSV: {outputs.get('primary_csv')}")
+        print(f"  Canonical:   {outputs.get('canonical_csv')}")
+        print(f"  Report:      {outputs.get('report_json')}")
+    except Exception as e:
+        print(f"  India-France corpus build failed: {e}")
+        sys.exit(1)
+
+
 def run_api():
     """Start FastAPI backend."""
     print("\n[API] Starting FastAPI backend on http://localhost:8000")
@@ -668,10 +704,12 @@ def main():
     )
 
     parser.add_argument("--build-official-corpus", action="store_true", help="Build a larger official India–Japan corpus via GDELT discovery")
+    parser.add_argument("--build-india-france-corpus", action="store_true", help="Build India–France corpus into data/raw/india_france_documents.csv")
     parser.add_argument("--corpus-start-year", type=int, default=2000, help="Start year for --build-official-corpus")
     parser.add_argument("--corpus-end-year", type=int, default=2026, help="End year for --build-official-corpus")
     parser.add_argument("--corpus-max-docs", type=int, default=600, help="Max documents to keep for --build-official-corpus")
     parser.add_argument("--corpus-max-urls-per-year", type=int, default=80, help="Max GDELT URLs per year to try")
+    parser.add_argument("--corpus-min-content-chars", type=int, default=850, help="Minimum extracted chars per page for corpus builders")
     parser.add_argument("--promote-corpus", action="store_true", help="Overwrite canonical corpus with the newly built official corpus")
     parser.add_argument("--full", action="store_true", help="Pipeline + API + Dashboard")
     parser.add_argument("--ingest", action="store_true", help="Ingest documents into RAG")
@@ -802,6 +840,17 @@ def main():
             max_docs=args.corpus_max_docs,
             max_urls_per_year=args.corpus_max_urls_per_year,
             promote_to_canonical=args.promote_corpus,
+        )
+        print("\nDone.")
+        return
+
+    if args.build_india_france_corpus:
+        run_build_india_france_corpus(
+            start_year=args.corpus_start_year,
+            end_year=args.corpus_end_year,
+            max_docs=args.corpus_max_docs,
+            max_urls_per_year=args.corpus_max_urls_per_year,
+            min_content_chars=args.corpus_min_content_chars,
         )
         print("\nDone.")
         return
