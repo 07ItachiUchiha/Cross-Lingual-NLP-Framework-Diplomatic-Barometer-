@@ -44,6 +44,7 @@ class CrawlerTestSuite:
             ('scrapers.base_crawler', 'DiplomaticCrawler'),
             ('scrapers.mea_crawler', 'MEACrawler'),
             ('scrapers.mofa_crawler', 'MOFACrawler'),
+            ('scrapers.france_mfa_crawler_enhanced', 'FranceMFACrawler'),
         ]
         
         for module_name, class_name in crawlers:
@@ -81,6 +82,15 @@ class CrawlerTestSuite:
         except Exception as e:
             logger.error(f"✗ MOFACrawler instantiation FAILED: {str(e)}")
             self.crawler_status.setdefault('MOFACrawler', {})['instantiation'] = f'FAIL: {str(e)}'
+
+        try:
+            from scrapers.france_mfa_crawler_enhanced import FranceMFACrawler
+            france_mfa = FranceMFACrawler()
+            logger.info(f"✓ FranceMFACrawler instantiated successfully")
+            self.crawler_status.setdefault('FranceMFACrawler', {})['instantiation'] = 'PASS'
+        except Exception as e:
+            logger.error(f"✗ FranceMFACrawler instantiation FAILED: {str(e)}")
+            self.crawler_status.setdefault('FranceMFACrawler', {})['instantiation'] = f'FAIL: {str(e)}'
     
     def test_config(self):
         """Test country configuration"""
@@ -94,11 +104,11 @@ class CrawlerTestSuite:
                 get_ministry_name, get_country_pair_label
             )
             
-            logger.info(f"✓ Countries defined: {len(COUNTRIES)} (India, Japan)")
+            logger.info(f"✓ Countries defined: {len(COUNTRIES)}")
             for code, country in COUNTRIES.items():
                 logger.info(f"  - {country['name']:15s} ({code:10s}): {country['ministry_name']}")
             
-            logger.info(f"\n✓ Country pairs defined: {len(COUNTRY_PAIRS)} (India-Japan)")
+            logger.info(f"\n✓ Country pairs defined: {len(COUNTRY_PAIRS)}")
             for i, pair in enumerate(COUNTRY_PAIRS, 1):
                 try:
                     label = get_country_pair_label(pair)

@@ -17,6 +17,7 @@ from utils.country_config import COUNTRY_PAIRS, COUNTRIES
 from scrapers.data_loader import DataLoader
 from scrapers.mea_crawler import MEACrawler
 from scrapers.mofa_crawler import MOFACrawler
+from scrapers.france_mfa_crawler_enhanced import FranceMFACrawler
 
 
 class CountryPairDataLoader:
@@ -34,10 +35,9 @@ class CountryPairDataLoader:
         default_path = self.cache_dir / f"{pair_name}_documents.csv"
 
         # Prefer canonical enriched corpus when available (keeps original raw file untouched)
-        if pair_name == "india_japan":
-            canonical = self.cache_dir / "india_japan_documents_canonical.csv"
-            if canonical.exists():
-                return canonical
+        canonical = self.cache_dir / f"{pair_name}_documents_canonical.csv"
+        if canonical.exists():
+            return canonical
 
         return default_path
     
@@ -116,6 +116,13 @@ class CountryPairDataLoader:
                     df = crawler.fetch_all_documents()
                     if df is not None and len(df) > 0:
                         dfs.append(df)
+
+                elif country == 'france':
+                    logger.info("  Loading France MEAE documents...")
+                    crawler = FranceMFACrawler()
+                    df = crawler.fetch_all_documents(country_pair=country_pair)
+                    if df is not None and len(df) > 0:
+                        dfs.append(df)
             
             if dfs:
                 combined_df = pd.concat(dfs, ignore_index=True)
@@ -178,6 +185,7 @@ def test_data_loading():
     # Test loading for each country pair
     test_pairs = [
         ('india', 'japan'),
+        ('india', 'france'),
     ]
     
     for pair in test_pairs:

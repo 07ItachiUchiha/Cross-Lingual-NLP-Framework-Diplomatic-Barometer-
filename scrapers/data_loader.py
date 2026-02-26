@@ -5,7 +5,7 @@ This module intentionally avoids hardcoded/mock datasets.
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 import re
 from difflib import SequenceMatcher
 import os
@@ -39,8 +39,20 @@ class DataLoader:
         self.documents = None
         self.last_loaded_path: Optional[Path] = None
 
-        self.primary_filename = "india_japan_documents.csv"
-        self.canonical_filename = "india_japan_documents_canonical.csv"
+        self.default_country_pair: Tuple[str, str] = ("india", "japan")
+        self.primary_filename, self.canonical_filename = self._pair_filenames(self.default_country_pair)
+
+    @staticmethod
+    def _pair_slug(country_pair: Tuple[str, str]) -> str:
+        return f"{country_pair[0]}_{country_pair[1]}"
+
+    def _pair_filenames(self, country_pair: Tuple[str, str]) -> Tuple[str, str]:
+        slug = self._pair_slug(country_pair)
+        return f"{slug}_documents.csv", f"{slug}_documents_canonical.csv"
+
+    def get_pair_filenames(self, country_pair: Optional[Tuple[str, str]] = None) -> Tuple[str, str]:
+        pair = country_pair or self.default_country_pair
+        return self._pair_filenames(pair)
 
     def _validate_and_normalize(self, df: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
         missing = self.REQUIRED_COLUMNS - set(df.columns)
@@ -72,19 +84,20 @@ class DataLoader:
 
         return validated_df
 
-    def load_real_data(self, csv_path: Optional[str] = None) -> pd.DataFrame:
+    def load_real_data(self, csv_path: Optional[str] = None, country_pair: Optional[Tuple[str, str]] = None) -> pd.DataFrame:
         """Load the primary real dataset CSV from disk.
 
-        Expected default file: data/raw/india_japan_documents.csv
+        Expected default file: data/raw/<country1>_<country2>_documents.csv
         If a canonical enriched corpus exists, it is preferred:
-          data/raw/india_japan_documents_canonical.csv
+          data/raw/<country1>_<country2>_documents_canonical.csv
         """
 
         if csv_path:
             path = Path(csv_path)
         else:
-            canonical = self.data_dir / self.canonical_filename
-            primary = self.data_dir / self.primary_filename
+            primary_filename, canonical_filename = self.get_pair_filenames(country_pair)
+            canonical = self.data_dir / canonical_filename
+            primary = self.data_dir / primary_filename
             path = canonical if canonical.exists() else primary
 
         if not path.exists():
@@ -115,18 +128,19 @@ class DataLoader:
         except Exception:
             return ""
 
-    def write_or_update_canonical_corpus(self) -> Optional[Path]:
+    def write_or_update_canonical_corpus(self, country_pair: Optional[Tuple[str, str]] = None) -> Optional[Path]:
         """Create/update a canonical corpus CSV with enriched URLs.
 
         - Reads existing canonical corpus if present, otherwise primary corpus.
         - Uses all available live scrape CSVs (data/raw/live_scrape_*.csv) to fill missing URLs.
-        - Writes to: data/raw/india_japan_documents_canonical.csv
+        - Writes to: data/raw/<country1>_<country2>_documents_canonical.csv
 
         The original primary corpus is never modified.
         """
 
-        canonical_path = self.data_dir / self.canonical_filename
-        primary_path = self.data_dir / self.primary_filename
+        primary_filename, canonical_filename = self.get_pair_filenames(country_pair)
+        canonical_path = self.data_dir / canonical_filename
+        primary_path = self.data_dir / primary_filename
 
         base_path = canonical_path if canonical_path.exists() else primary_path
         if not base_path.exists():
@@ -279,10 +293,11 @@ class DataLoader:
         self,
         mea_file: Optional[str] = None,
         mofa_file: Optional[str] = None,
+        country_pair: Optional[Tuple[str, str]] = None,
     ) -> pd.DataFrame:
         """Load real MEA+MOFA data either from split files or primary combined CSV."""
         if not mea_file and not mofa_file:
-            return self.load_real_data()
+            return self.load_real_data(country_pair=country_pair)
 
         dataframes = []
         if mea_file:

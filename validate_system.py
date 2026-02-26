@@ -271,8 +271,8 @@ class ValidationChecklist:
             
             manager = DashboardDataManager()
             
-            # Test loading for India-Japan pair
-            test_pairs = [('india', 'japan')]
+            # Test loading for core country pairs
+            test_pairs = [('india', 'japan'), ('india', 'france')]
             
             for pair in test_pairs:
                 try:
@@ -302,7 +302,8 @@ class ValidationChecklist:
                 ('PAGE 6: SEARCH & EXPLORE', 'PAGE 6'),
                 ('PAGE 7: STATISTICAL TESTS', 'PAGE 7'),
                 ('def load_data_for_pair', 'Country-pair data loading'),
-                ("selected_pair = ('india', 'japan')", 'India-Japan pair config'),
+                ('COUNTRY_PAIRS', 'Country pair config import'),
+                ('country_pair_selector', 'Country pair selector'),
             ]
             
             for snippet, name in required_snippets:

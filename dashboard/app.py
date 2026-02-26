@@ -26,8 +26,11 @@ from analysis.strategic_shift_enhanced import StrategicShiftAnalyzer
 from analysis.tone_analyzer import ToneAnalyzer
 from analysis.thematic_clustering import ThematicAnalyzer
 from utils.country_config import (
+    COUNTRIES,
+    COUNTRY_PAIRS,
     get_country_name,
-    get_ministry_name
+    get_ministry_name,
+    get_country_pair_label,
 )
 from utils.pdf_report_generator import PDFReportGenerator, REPORTLAB_AVAILABLE
 from utils.evidence_confidence import build_confidence_summary
@@ -63,11 +66,13 @@ def _file_signature(path: Path) -> str:
         return f"{path.name}:unreadable"
 
 
-def _corpus_cache_token() -> str:
+def _corpus_cache_token(country_pair: Optional[Tuple[str, str]] = None) -> str:
     project_root = Path(__file__).resolve().parent.parent
     raw_dir = project_root / "data" / "raw"
-    canonical = raw_dir / "india_japan_documents_canonical.csv"
-    primary = raw_dir / "india_japan_documents.csv"
+    pair = country_pair or ("india", "japan")
+    pair_slug = f"{pair[0]}_{pair[1]}"
+    canonical = raw_dir / f"{pair_slug}_documents_canonical.csv"
+    primary = raw_dir / f"{pair_slug}_documents.csv"
     target = canonical if canonical.exists() else primary
     return _file_signature(target)
 
@@ -1308,14 +1313,27 @@ def main():
     # Sidebar navigation
     st.sidebar.title(lang["navigation"])
     
-    # Fixed country pair: India-Japan
-    selected_pair = ('india', 'japan')
+    country_pairs = COUNTRY_PAIRS if COUNTRY_PAIRS else [('india', 'japan')]
+    pair_labels = [get_country_pair_label(pair) for pair in country_pairs]
+    default_pair = ('india', 'japan') if ('india', 'japan') in country_pairs else country_pairs[0]
+    default_index = country_pairs.index(default_pair)
+
+    selected_pair_label = st.sidebar.selectbox(
+        "Country Pair",
+        pair_labels,
+        index=default_index,
+        key="country_pair_selector",
+    )
+    selected_pair = country_pairs[pair_labels.index(selected_pair_label)]
+
     country1_name = get_country_name(selected_pair[0])
     country2_name = get_country_name(selected_pair[1])
     country1_ministry = get_ministry_name(selected_pair[0])
     country2_ministry = get_ministry_name(selected_pair[1])
+    country1_flag = COUNTRIES.get(selected_pair[0], {}).get('flag', '🏳️')
+    country2_flag = COUNTRIES.get(selected_pair[1], {}).get('flag', '🏳️')
     
-    st.sidebar.info(f"🇮🇳 {country1_name} ({country1_ministry}) ↔ 🇯🇵 {country2_name} ({country2_ministry})")
+    st.sidebar.info(f"{country1_flag} {country1_name} ({country1_ministry}) ↔ {country2_flag} {country2_name} ({country2_ministry})")
 
     role_profile = st.sidebar.selectbox(
         "Audience profile",
@@ -1341,7 +1359,7 @@ def main():
         st.caption("Re-evaluates tokens")
 
     pair_str = f"{selected_pair[0]}-{selected_pair[1]}"
-    corpus_token = _corpus_cache_token()
+    corpus_token = _corpus_cache_token(selected_pair)
     df = load_data_for_pair(pair_str, corpus_token=corpus_token)
     doc_count = len(df)
     year_min = df['year'].min()
@@ -1559,7 +1577,7 @@ def main():
         )
 
         if pdf_scope == "Full corpus (ignore sidebar filters)":
-            current_pdf_signature = ("full", _corpus_cache_token())
+            current_pdf_signature = ("full", pair_str, _corpus_cache_token(selected_pair))
             st.sidebar.caption("PDF snapshot uses full corpus (pre-filter view).")
         else:
             current_pdf_signature = ("filtered", filter_signature)

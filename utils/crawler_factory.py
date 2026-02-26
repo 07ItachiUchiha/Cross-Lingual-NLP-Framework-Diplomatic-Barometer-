@@ -15,7 +15,7 @@ def get_crawler_for_country(country_code: str, country_pair: Tuple[str, str]):
     Get appropriate crawler class for a country.
     
     Args:
-        country_code: Country code ('india' or 'japan')
+        country_code: Country code ('india', 'japan', or 'france')
         country_pair: Tuple of (country1, country2)
     
     Returns:
@@ -32,9 +32,13 @@ def get_crawler_for_country(country_code: str, country_pair: Tuple[str, str]):
     elif country_code == 'japan':
         from scrapers.mofa_crawler_enhanced import MOFACrawler
         return MOFACrawler()
+
+    elif country_code == 'france':
+        from scrapers.france_mfa_crawler_enhanced import FranceMFACrawler
+        return FranceMFACrawler()
     
     else:
-        raise ValueError(f"No crawler available for country: {country_code}. Only 'india' and 'japan' are supported.")
+        raise ValueError(f"No crawler available for country: {country_code}. Only 'india', 'japan', and 'france' are supported.")
 
 
 def scrape_country_pair(country_pair: Tuple[str, str], start_year: int = 2000, end_year: int = 2024):
@@ -122,8 +126,16 @@ def main():
     except Exception as e:
         print(f"  FAIL: {e}")
     
-    # Test 3: Invalid country
-    print("\n[TEST 3] Test invalid country")
+    # Test 3: France crawler
+    print("\n[TEST 3] Instantiate France MFA Crawler")
+    try:
+        france_crawler = get_crawler_for_country('france', ('india', 'france'))
+        print(f"  OK: {france_crawler.__class__.__name__}")
+    except Exception as e:
+        print(f"  FAIL: {e}")
+
+    # Test 4: Invalid country
+    print("\n[TEST 4] Test invalid country")
     try:
         invalid_crawler = get_crawler_for_country('invalid', ('invalid', 'country'))
         print(f"  FAIL: Should have raised error")

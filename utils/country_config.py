@@ -27,6 +27,17 @@ COUNTRIES = {
         'region': 'East Asia',
         'data_available_from': 2000
     },
+    'france': {
+        'name': 'France',
+        'flag': '🇫🇷',
+        'ministry_code': 'MEAE',
+        'ministry_name': 'Ministry for Europe and Foreign Affairs',
+        'website': 'https://www.diplomatie.gouv.fr/en/',
+        'press_release_path': '/country-files/india/',
+        'language': 'english',
+        'region': 'Europe',
+        'data_available_from': 2000
+    },
 }
 
 
@@ -34,6 +45,7 @@ COUNTRIES = {
 # Each pair represents bilateral relations being analyzed
 COUNTRY_PAIRS = [
     ('india', 'japan'),      # South Asia ↔ East Asia
+    ('india', 'france'),     # South Asia ↔ Europe
 ]
 
 # Thematic Keywords for Analysis
