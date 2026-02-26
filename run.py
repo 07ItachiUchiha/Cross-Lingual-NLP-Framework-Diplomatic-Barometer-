@@ -40,11 +40,16 @@ DEFAULT_DIPLOMACY_RSS_FEEDS = [
 ]
 
 
-def check_python():
+def check_python(require_py311: bool = False):
     if sys.version_info < (3, 9):
         print("Error: Python 3.9+ required")
         sys.exit(1)
     print(f"  Python {sys.version_info.major}.{sys.version_info.minor} detected")
+
+    if require_py311 and (sys.version_info.major, sys.version_info.minor) != (3, 11):
+        print("Error: strict mode requires Python 3.11 exactly.")
+        print("  Activate your .venv311 environment and retry.")
+        sys.exit(1)
 
     if sys.version_info >= (3, 13):
         print("  Warning: spaCy has known compatibility issues on Python 3.13+ in this project stack.")
@@ -554,6 +559,40 @@ def run_build_india_france_corpus(
         sys.exit(1)
 
 
+def run_refresh_corpora(
+    start_year: int = 2000,
+    end_year: int = 2026,
+    max_docs_india_japan: int = 600,
+    max_docs_india_france: int = 500,
+    max_urls_per_year: int = 80,
+    min_content_chars: int = 850,
+):
+    """Refresh both India–Japan and India–France corpora in one run."""
+    print("\n[CORPUS] Refreshing India–Japan + India–France corpora...")
+    print("-" * 70)
+    try:
+        from automation.corpus_refresh import refresh_pair_corpora
+
+        report = refresh_pair_corpora(
+            start_year=int(start_year),
+            end_year=int(end_year),
+            max_docs_india_japan=int(max_docs_india_japan),
+            max_docs_india_france=int(max_docs_india_france),
+            max_urls_per_year=int(max_urls_per_year),
+            min_content_chars=int(min_content_chars),
+        )
+
+        jp = report.get("india_japan", {}) if isinstance(report, dict) else {}
+        fr = report.get("india_france", {}) if isinstance(report, dict) else {}
+        print(f"  India-Japan docs:  {jp.get('total_docs_kept', 0)}")
+        print(f"  India-France docs: {fr.get('total_docs_kept', 0)}")
+        print(f"  India-Japan output: {jp.get('outputs', {}).get('corpus_csv')}")
+        print(f"  India-France output: {fr.get('outputs', {}).get('primary_csv')}")
+    except Exception as e:
+        print(f"  Refresh corpora failed: {e}")
+        sys.exit(1)
+
+
 def run_api():
     """Start FastAPI backend."""
     print("\n[API] Starting FastAPI backend on http://localhost:8000")
@@ -705,6 +744,8 @@ def main():
 
     parser.add_argument("--build-official-corpus", action="store_true", help="Build a larger official India–Japan corpus via GDELT discovery")
     parser.add_argument("--build-india-france-corpus", action="store_true", help="Build India–France corpus into data/raw/india_france_documents.csv")
+    parser.add_argument("--refresh-corpora", action="store_true", help="Refresh both India–Japan and India–France corpora in one command")
+    parser.add_argument("--require-py311", action="store_true", help="Fail fast unless Python version is exactly 3.11")
     parser.add_argument("--corpus-start-year", type=int, default=2000, help="Start year for --build-official-corpus")
     parser.add_argument("--corpus-end-year", type=int, default=2026, help="End year for --build-official-corpus")
     parser.add_argument("--corpus-max-docs", type=int, default=600, help="Max documents to keep for --build-official-corpus")
@@ -777,7 +818,7 @@ def main():
     args = parser.parse_args()
 
     print(BANNER)
-    check_python()
+    check_python(require_py311=bool(args.require_py311))
 
     if args.provenance_only:
         run_provenance_only()
@@ -849,6 +890,18 @@ def main():
             start_year=args.corpus_start_year,
             end_year=args.corpus_end_year,
             max_docs=args.corpus_max_docs,
+            max_urls_per_year=args.corpus_max_urls_per_year,
+            min_content_chars=args.corpus_min_content_chars,
+        )
+        print("\nDone.")
+        return
+
+    if args.refresh_corpora:
+        run_refresh_corpora(
+            start_year=args.corpus_start_year,
+            end_year=args.corpus_end_year,
+            max_docs_india_japan=args.corpus_max_docs,
+            max_docs_india_france=max(200, int(args.corpus_max_docs * 0.85)),
             max_urls_per_year=args.corpus_max_urls_per_year,
             min_content_chars=args.corpus_min_content_chars,
         )

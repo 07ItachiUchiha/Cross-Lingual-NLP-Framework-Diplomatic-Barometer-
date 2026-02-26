@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import pandas as pd
 import requests
@@ -83,6 +83,13 @@ class OfficialCorpusBuilder:
             "mofa.go.jp": "MOFA",
             "www.mofa.go.jp": "MOFA",
         }
+        self.seed_urls = [
+            "https://www.mea.gov.in/bilateral-documents.htm?dtl/1/india-japan-relations",
+            "https://www.mea.gov.in/press-releases.htm",
+            "https://www.mofa.go.jp/region/asia-paci/india/index.html",
+            "https://www.mofa.go.jp/press/release/index.html",
+            "https://www.in.emb-japan.go.jp/itpr_en/Japan_India_Relations.html",
+        ]
 
     def close(self) -> None:
         if self._browser is not None:
@@ -192,6 +199,124 @@ class OfficialCorpusBuilder:
         text = re.sub(r"\s+", " ", text).strip()
         return title, text
 
+    @staticmethod
+    def _extract_date_value(text: str, fallback_year: int = 2020) -> str:
+        patterns = [
+            r"\b(\d{4}-\d{2}-\d{2})\b",
+            r"\b(\d{1,2}\s+[A-Za-z]+\s+\d{4})\b",
+            r"\b([A-Za-z]+\s+\d{1,2},\s*\d{4})\b",
+            r"\b(\d{4}/\d{2}/\d{2})\b",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if not match:
+                continue
+            parsed = pd.to_datetime(match.group(1), errors="coerce", utc=True)
+            if not pd.isna(parsed):
+                return parsed.date().isoformat()
+        return pd.Timestamp(year=fallback_year, month=1, day=1).date().isoformat()
+
+    @staticmethod
+    def _normalize_title(text: object) -> str:
+        value = str(text or "").strip().lower()
+        return re.sub(r"\s+", " ", value)
+
+    @staticmethod
+    def _normalize_content(text: object) -> str:
+        value = str(text or "").strip().lower()
+        value = re.sub(r"\s+", " ", value)
+        return value[:300]
+
+    def _dedupe_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        if df is None or df.empty:
+            return pd.DataFrame(columns=df.columns if isinstance(df, pd.DataFrame) else None)
+
+        work_df = df.copy()
+        work_df["_k_date"] = pd.to_datetime(work_df["date"], errors="coerce").dt.date.astype(str)
+        work_df["_k_source"] = work_df["source"].astype(str).str.upper().str.strip()
+        work_df["_k_title"] = work_df["title"].apply(self._normalize_title)
+        work_df["_k_text"] = work_df["content"].apply(self._normalize_content)
+
+        work_df = work_df.drop_duplicates(subset=["_k_date", "_k_source", "_k_title"], keep="first")
+        work_df = work_df.drop_duplicates(subset=["_k_source", "_k_title", "_k_text"], keep="first")
+        work_df = work_df.drop(columns=["_k_date", "_k_source", "_k_title", "_k_text"], errors="ignore")
+        return work_df.reset_index(drop=True)
+
+    def _discover_official_links(self, cfg: CorpusBuildConfig, limit: int = 400) -> List[str]:
+        keywords = ["india", "japan", "joint", "statement", "summit", "bilateral", "minister", "release", "press"]
+        discovered: List[str] = []
+        seen: Set[str] = set()
+
+        for seed in self.seed_urls:
+            html = self._fetch_html(seed, use_browser_fallback=bool(cfg.use_browser_fallback))
+            if not html:
+                continue
+
+            soup = BeautifulSoup(html, "html.parser")
+            for anchor in soup.find_all("a", href=True):
+                href = str(anchor.get("href") or "").strip()
+                if not href or href.startswith("javascript:") or href.startswith("mailto:"):
+                    continue
+
+                absolute = urljoin(seed, href)
+                source = self._host_source(absolute)
+                if not source:
+                    continue
+
+                marker = f"{absolute.lower()} {anchor.get_text(' ', strip=True).lower()}"
+                if not any(key in marker for key in keywords):
+                    continue
+
+                if absolute in seen:
+                    continue
+                seen.add(absolute)
+                discovered.append(absolute)
+                if len(discovered) >= limit:
+                    return discovered
+
+        return discovered
+
+    def _build_from_official_links(self, links: List[str], cfg: CorpusBuildConfig) -> List[Dict[str, Any]]:
+        rows: List[Dict[str, Any]] = []
+        seen_titles: Set[str] = set()
+
+        for url in links:
+            source = self._host_source(url)
+            if not source:
+                continue
+
+            html = self._fetch_html(url, use_browser_fallback=bool(cfg.use_browser_fallback))
+            if not html:
+                continue
+
+            title, text = self._extract_title_and_text(html)
+            if len(text) < int(cfg.min_content_chars):
+                continue
+
+            title_norm = self._normalize_title(title)
+            if not title_norm or title_norm in seen_titles:
+                continue
+            seen_titles.add(title_norm)
+
+            date_val = self._extract_date_value(f"{title} {text[:1200]}", fallback_year=max(2000, int(cfg.start_year)))
+            rows.append(
+                {
+                    "date": date_val,
+                    "title": title,
+                    "location": "",
+                    "signatories": "",
+                    "content": text[:50000],
+                    "source": source,
+                    "url": url,
+                }
+            )
+
+            if len(rows) >= int(cfg.max_docs_total):
+                break
+            time.sleep(random.uniform(cfg.sleep_seconds_min, cfg.sleep_seconds_max))
+
+        return rows
+
     def build(self, cfg: CorpusBuildConfig) -> Dict[str, Any]:
         run_started = datetime.now(timezone.utc).isoformat()
 
@@ -246,11 +371,18 @@ class OfficialCorpusBuilder:
 
                 time.sleep(random.uniform(cfg.sleep_seconds_min, cfg.sleep_seconds_max))
 
+        if not rows:
+            fallback_links = self._discover_official_links(cfg, limit=max(120, int(cfg.max_docs_total)))
+            fallback_rows = self._build_from_official_links(fallback_links, cfg)
+            rows.extend(fallback_rows)
+
         df = pd.DataFrame(rows)
         if not df.empty:
             df["date"] = pd.to_datetime(df["date"], errors="coerce")
             df = df.dropna(subset=["date"]).copy()
             df["year"] = df["date"].dt.year
+            df = df[df["year"].between(int(cfg.start_year), int(cfg.end_year), inclusive="both")].copy()
+            df = self._dedupe_dataframe(df)
             df = df.sort_values(["date", "source", "title"]).reset_index(drop=True)
 
         stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")

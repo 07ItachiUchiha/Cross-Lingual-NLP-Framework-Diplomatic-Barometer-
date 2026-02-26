@@ -85,6 +85,9 @@ class IndiaFranceCorpusBuilder:
             "https://www.diplomatie.gouv.fr/en/country-files/india/",
             "https://www.diplomatie.gouv.fr/en/",
             "https://www.elysee.fr/en/",
+            "https://www.elysee.fr/en/search?query=India",
+            "https://www.in.ambafrance.org/",
+            "https://www.amb-india.fr/",
         ]
 
     def close(self) -> None:
@@ -285,6 +288,32 @@ class IndiaFranceCorpusBuilder:
         text = re.sub(r"\s+", " ", text).strip()
         return title, text
 
+    @staticmethod
+    def _normalize_title(text: object) -> str:
+        value = str(text or "").strip().lower()
+        return re.sub(r"\s+", " ", value)
+
+    @staticmethod
+    def _normalize_content(text: object) -> str:
+        value = str(text or "").strip().lower()
+        value = re.sub(r"\s+", " ", value)
+        return value[:300]
+
+    def _dedupe_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        if df is None or df.empty:
+            return pd.DataFrame(columns=df.columns if isinstance(df, pd.DataFrame) else None)
+
+        work_df = df.copy()
+        work_df["_k_date"] = pd.to_datetime(work_df["date"], errors="coerce").dt.date.astype(str)
+        work_df["_k_source"] = work_df["source"].astype(str).str.upper().str.strip()
+        work_df["_k_title"] = work_df["title"].apply(self._normalize_title)
+        work_df["_k_text"] = work_df["content"].apply(self._normalize_content)
+
+        work_df = work_df.drop_duplicates(subset=["_k_date", "_k_source", "_k_title"], keep="first")
+        work_df = work_df.drop_duplicates(subset=["_k_source", "_k_title", "_k_text"], keep="first")
+        work_df = work_df.drop(columns=["_k_date", "_k_source", "_k_title", "_k_text"], errors="ignore")
+        return work_df.reset_index(drop=True)
+
     def build(self, cfg: IndiaFranceBuildConfig) -> Dict[str, Any]:
         run_started = datetime.now(timezone.utc).isoformat()
         urls_seen: Set[str] = set()
@@ -344,16 +373,19 @@ class IndiaFranceCorpusBuilder:
             df = df.dropna(subset=["date"]).copy()
             df["year"] = df["date"].dt.year
             df = df[df["year"].between(int(cfg.start_year), int(cfg.end_year), inclusive="both")].copy()
+            df = self._dedupe_dataframe(df)
             df = df.sort_values(["date", "source", "title"]).reset_index(drop=True)
 
         stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         out_primary = self.output_dir / "india_france_documents.csv"
         out_canonical = self.output_dir / "india_france_documents_canonical.csv"
+        out_snapshot = self.output_dir / f"india_france_documents_snapshot_{stamp}.csv"
         report_path = self.output_dir / f"india_france_corpus_build_report_{stamp}.json"
 
         if not df.empty:
             df.to_csv(out_primary, index=False, encoding="utf-8")
             df.to_csv(out_canonical, index=False, encoding="utf-8")
+            df.to_csv(out_snapshot, index=False, encoding="utf-8")
 
         report = {
             "run_started_utc": run_started,
@@ -371,6 +403,7 @@ class IndiaFranceCorpusBuilder:
             "outputs": {
                 "primary_csv": str(out_primary),
                 "canonical_csv": str(out_canonical),
+                "snapshot_csv": str(out_snapshot),
                 "report_json": str(report_path),
             },
         }
