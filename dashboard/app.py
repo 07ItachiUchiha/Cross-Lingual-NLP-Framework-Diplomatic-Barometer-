@@ -126,6 +126,31 @@ def _build_india_france_corpus_from_dashboard(
         builder.close()
 
 
+def _build_india_japan_corpus_from_dashboard(
+    start_year: int = 2000,
+    end_year: int = 2026,
+    max_docs: int = 600,
+    max_urls_per_year: int = 80,
+    min_content_chars: int = 850,
+) -> Dict[str, object]:
+    from scrapers.official_corpus_builder import OfficialCorpusBuilder, CorpusBuildConfig
+
+    builder = OfficialCorpusBuilder()
+    try:
+        cfg = CorpusBuildConfig(
+            start_year=int(start_year),
+            end_year=int(end_year),
+            max_docs_total=int(max_docs),
+            max_urls_per_year=int(max_urls_per_year),
+            min_content_chars=int(min_content_chars),
+        )
+        result = builder.build(cfg)
+        report = result.get("report", {}) if isinstance(result, dict) else {}
+        return report if isinstance(report, dict) else {}
+    finally:
+        builder.close()
+
+
 def _in_streamlit_runtime() -> bool:
     """Return True when running under `streamlit run`.
 
@@ -1400,6 +1425,24 @@ def main():
 
         if st.session_state.get("india_france_build_msg"):
             st.sidebar.success(str(st.session_state.get("india_france_build_msg")))
+
+    if selected_pair == ('india', 'japan'):
+        st.sidebar.markdown("---")
+        st.sidebar.subheader("Corpus Builder")
+        st.sidebar.caption("One-click rebuild for India-Japan corpus (official-source workflow).")
+        if st.sidebar.button("Build / Refresh India-Japan corpus", use_container_width=True):
+            with st.spinner("Building India-Japan corpus..."):
+                try:
+                    build_report = _build_india_japan_corpus_from_dashboard()
+                    docs_kept = int(build_report.get("total_docs_kept", 0)) if isinstance(build_report, dict) else 0
+                    st.session_state["india_japan_build_msg"] = f"India-Japan corpus rebuilt: {docs_kept} docs."
+                    st.cache_data.clear()
+                    st.rerun()
+                except Exception as e:
+                    st.sidebar.error(f"Build failed: {str(e)}")
+
+        if st.session_state.get("india_japan_build_msg"):
+            st.sidebar.success(str(st.session_state.get("india_japan_build_msg")))
 
     pair_str = f"{selected_pair[0]}-{selected_pair[1]}"
     corpus_token = _corpus_cache_token(selected_pair)
