@@ -51,6 +51,30 @@ from dashboard.page_renderers import render_overview_page, render_stats_page
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+_ORIG_ST_DATAFRAME = st.dataframe
+_ORIG_ST_PLOTLY_CHART = st.plotly_chart
+
+
+def _normalize_stretch_width(kwargs: Dict[str, object]) -> Dict[str, object]:
+    normalized = dict(kwargs)
+    if normalized.get("width") == "stretch":
+        normalized.pop("width", None)
+        normalized.setdefault("use_container_width", True)
+    return normalized
+
+
+def _dataframe_compat(*args, **kwargs):
+    return _ORIG_ST_DATAFRAME(*args, **_normalize_stretch_width(kwargs))
+
+
+def _plotly_chart_compat(*args, **kwargs):
+    return _ORIG_ST_PLOTLY_CHART(*args, **_normalize_stretch_width(kwargs))
+
+
+st.dataframe = _dataframe_compat
+st.plotly_chart = _plotly_chart_compat
+
 MIN_DOCS_TONE_THEME = 15
 MIN_DOCS_SIGNIFICANCE = 20
 MIN_DOCS_CHART_HARD_GUARD = 10
@@ -201,7 +225,7 @@ def load_data_for_pair(pair_str: str, corpus_token: str = ""):
 
 
 @cache_data(show_spinner="Preprocessing documents...")
-def preprocess_data(_df):
+def preprocess_data(_df, pair_key: str = ""):
     """Preprocess documents with caching"""
     logger.info("Preprocessing documents...")
     preprocessor = Preprocessor()
@@ -255,7 +279,7 @@ def perform_thematic_analysis(_df):
 
 
 @cache_data(show_spinner=False)
-def perform_issue_tagging(_df):
+def perform_issue_tagging(_df, pair_key: str = ""):
     tagged = add_issue_tags(_df)
     counts = summarize_issue_counts(tagged)
     trends = summarize_issue_trends(tagged)
@@ -1375,6 +1399,21 @@ def main():
         key="country_pair_selector",
     )
     selected_pair = country_pairs[pair_labels.index(selected_pair_label)]
+    selected_pair_key = f"{selected_pair[0]}-{selected_pair[1]}"
+
+    if st.session_state.get("_active_pair_key") != selected_pair_key:
+        for key in [
+            "doc_type_filter",
+            "issue_tags_filter",
+            "equity_regions_filter",
+            "equity_groups_filter",
+            "india_france_build_msg",
+            "india_japan_build_msg",
+        ]:
+            st.session_state.pop(key, None)
+        st.session_state["_active_pair_key"] = selected_pair_key
+        st.cache_data.clear()
+        st.rerun()
 
     country1_name = get_country_name(selected_pair[0])
     country2_name = get_country_name(selected_pair[1])
@@ -1454,9 +1493,9 @@ def main():
     
     # Preprocess data
     with st.spinner(lang["processing"]):
-        processed_df = preprocess_data(df)
+        processed_df = preprocess_data(df, pair_key=pair_str)
 
-    tagged_df, issue_counts_df, issue_trends_df, region_equity_df, group_equity_df = perform_issue_tagging(processed_df)
+    tagged_df, issue_counts_df, issue_trends_df, region_equity_df, group_equity_df = perform_issue_tagging(processed_df, pair_key=pair_str)
     if isinstance(tagged_df, pd.DataFrame) and len(tagged_df) > 0:
         processed_df = tagged_df
 
