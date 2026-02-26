@@ -225,7 +225,7 @@ def load_data_for_pair(pair_str: str, corpus_token: str = ""):
 
 
 @cache_data(show_spinner="Preprocessing documents...")
-def preprocess_data(_df, pair_key: str = ""):
+def preprocess_data(_df, pair_key: str = "", corpus_token: str = ""):
     """Preprocess documents with caching"""
     logger.info("Preprocessing documents...")
     preprocessor = Preprocessor()
@@ -279,7 +279,7 @@ def perform_thematic_analysis(_df):
 
 
 @cache_data(show_spinner=False)
-def perform_issue_tagging(_df, pair_key: str = ""):
+def perform_issue_tagging(_df, pair_key: str = "", corpus_token: str = ""):
     tagged = add_issue_tags(_df)
     counts = summarize_issue_counts(tagged)
     trends = summarize_issue_trends(tagged)
@@ -1493,9 +1493,13 @@ def main():
     
     # Preprocess data
     with st.spinner(lang["processing"]):
-        processed_df = preprocess_data(df, pair_key=pair_str)
+        processed_df = preprocess_data(df, pair_key=pair_str, corpus_token=corpus_token)
 
-    tagged_df, issue_counts_df, issue_trends_df, region_equity_df, group_equity_df = perform_issue_tagging(processed_df, pair_key=pair_str)
+    tagged_df, issue_counts_df, issue_trends_df, region_equity_df, group_equity_df = perform_issue_tagging(
+        processed_df,
+        pair_key=pair_str,
+        corpus_token=corpus_token,
+    )
     if isinstance(tagged_df, pd.DataFrame) and len(tagged_df) > 0:
         processed_df = tagged_df
 
