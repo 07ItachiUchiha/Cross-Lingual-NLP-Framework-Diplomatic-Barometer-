@@ -635,6 +635,8 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
         scored_df=scored_df,
         yearly_df=yearly_df,
         stats_result=stats_result,
+        source_balance=overview_bundle.get("source_balance", {}),
+        uncertainty_notes=overview_bundle.get("uncertainty_notes", []),
         tone_df=tone_df,
         thematic_analysis=thematic_analysis,
         external_ctx=external_ctx,
@@ -978,6 +980,8 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
     st.subheader("Economic vs. Security Focus Comparison")
 
     stats_result = stats_bundle.get("stats_result", {})
+    source_balance = stats_bundle.get("source_balance", {})
+    uncertainty_notes = stats_bundle.get("uncertainty_notes", [])
     if len(scored_df) < MIN_DOCS_SIGNIFICANCE:
         st.warning(
             f"Significance checks use {len(scored_df)} docs; recommended minimum is {MIN_DOCS_SIGNIFICANCE} for stable inference.",
@@ -1008,6 +1012,39 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
             f"Corpus source credibility (0-1): {corpus_credibility_score:.3f}; "
             f"Weighted gap (security-economic): {weighted_focus.get('weighted_gap_security_minus_economic', 0.0):.4f}"
         )
+
+    st.subheader("Source-balance robustness")
+    if isinstance(source_balance, dict) and source_balance.get("available"):
+        sb_col1, sb_col2, sb_col3, sb_col4 = st.columns(4)
+        with sb_col1:
+            st.metric("Dominant source share", f"{float(source_balance.get('dominant_share', 0.0)) * 100:.1f}%")
+        with sb_col2:
+            st.metric("Document-weighted gap", f"{float(source_balance.get('document_weighted_gap', 0.0)):.4f}")
+        with sb_col3:
+            st.metric("Source-balanced gap", f"{float(source_balance.get('source_balanced_gap', 0.0)):.4f}")
+        with sb_col4:
+            st.metric("Gap divergence", f"{float(source_balance.get('gap_delta_abs', 0.0)):.4f}")
+
+        st.caption(
+            f"Dominant source: {source_balance.get('dominant_source', 'n/a')} | "
+            f"Effective source count: {float(source_balance.get('effective_source_count', 0.0)):.2f}"
+        )
+
+        by_source_df = source_balance.get("by_source", pd_local.DataFrame())
+        if isinstance(by_source_df, pd_local.DataFrame) and len(by_source_df) > 0:
+            with st.expander("Source-balance table", expanded=False):
+                show_cols = [c for c in ["source", "documents", "share", "mean_gap"] if c in by_source_df.columns]
+                table_df = by_source_df[show_cols].copy() if show_cols else by_source_df.copy()
+                if "share" in table_df.columns:
+                    table_df["share"] = (pd_local.to_numeric(table_df["share"], errors="coerce").fillna(0.0) * 100).round(1)
+                st.dataframe(table_df, width='stretch', hide_index=True)
+    else:
+        st.info("Source-balance metrics unavailable for current view.")
+
+    if isinstance(uncertainty_notes, list) and len(uncertainty_notes) > 0:
+        st.subheader("Uncertainty notes")
+        for note in uncertainty_notes:
+            st.warning(note)
 
     with st.expander("Source credibility profile", expanded=False):
         if isinstance(source_cred_df, pd_local.DataFrame) and len(source_cred_df) > 0:

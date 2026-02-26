@@ -163,6 +163,7 @@ Added: `chromadb`, `sentence-transformers`, `openai`, `fastapi`, `uvicorn[standa
 Rewritten as a unified launcher with argparse. Modes:
 
 ```
+
 python run.py              # classic: pipeline → Streamlit
 python run.py --api        # FastAPI only
 python run.py --full       # pipeline + API + dashboard in parallel

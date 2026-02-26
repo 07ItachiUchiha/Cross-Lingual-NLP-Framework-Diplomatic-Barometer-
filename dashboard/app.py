@@ -6,6 +6,7 @@ Enhanced with statistical testing, better caching, and more visualizations
 
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from scipy import stats
@@ -298,6 +299,8 @@ def build_analysis_bundle(_df: pd.DataFrame, external_ctx: Dict, include_tone_th
         scored_df.get('economic_score', pd.Series(dtype=float)),
         scored_df.get('security_score', pd.Series(dtype=float)),
     )
+    source_balance = calculate_source_balance_metrics(scored_df)
+    uncertainty_notes = build_uncertainty_notes(_df, stats_result, source_balance)
     confidence_summary = build_confidence_summary(_df, stats_result, external_ctx)
     contradiction_df = detect_contradictions(_df)
     source_cred_df, corpus_credibility_score = summarize_source_credibility(_df)
@@ -336,6 +339,8 @@ def build_analysis_bundle(_df: pd.DataFrame, external_ctx: Dict, include_tone_th
         "scored_df": scored_df,
         "yearly_df": yearly_df,
         "stats_result": stats_result,
+        "source_balance": source_balance,
+        "uncertainty_notes": uncertainty_notes,
         "confidence_summary": confidence_summary,
         "contradiction_df": contradiction_df,
         "source_cred_df": source_cred_df,
@@ -355,13 +360,24 @@ def build_analysis_bundle(_df: pd.DataFrame, external_ctx: Dict, include_tone_th
     if include_tone_theme:
         tone_analyzer, tone_df = perform_tone_analysis(_df)
         thematic_analyzer, thematic_analysis, thematic_df = perform_thematic_analysis(_df)
+        tone_summary = build_tone_summary(tone_analyzer, tone_df)
+        theme_summary = build_theme_summary(thematic_analysis)
         bundle.update(
             {
                 "tone_analyzer": tone_analyzer,
                 "tone_df": tone_df,
+                "tone_summary": tone_summary,
                 "thematic_analyzer": thematic_analyzer,
                 "thematic_analysis": thematic_analysis,
                 "thematic_df": thematic_df,
+                "theme_summary": theme_summary,
+            }
+        )
+    else:
+        bundle.update(
+            {
+                "tone_summary": {},
+                "theme_summary": {},
             }
         )
 
@@ -655,11 +671,18 @@ def calculate_statistical_significance(series1: pd.Series, series2: pd.Series) -
         security = tmp["security"]
         diff = security - economic
 
+        diff_arr = pd.to_numeric(diff, errors="coerce").dropna().to_numpy(dtype=float)
+
         t_stat, p_value = stats.ttest_rel(economic, security, nan_policy="omit")
+        if pd.isna(t_stat):
+            t_stat = 0.0
+        if pd.isna(p_value):
+            p_value = 1.0
 
         diff_std = float(diff.std(ddof=1)) if n > 1 else 0.0
         diff_mean = float(diff.mean())
         diff_sem = float(stats.sem(diff, nan_policy="omit")) if n > 1 else 0.0
+        zero_diff_ratio = float(np.mean(np.isclose(diff_arr, 0.0, atol=1e-12))) if n > 0 else 0.0
 
         if n > 1 and diff_sem > 0:
             t_crit = float(stats.t.ppf(0.975, df=n - 1))
@@ -682,11 +705,56 @@ def calculate_statistical_significance(series1: pd.Series, series2: pd.Series) -
         except Exception:
             wilcoxon_p = None
 
+        permutation_p = None
+        bootstrap_ci95_low = None
+        bootstrap_ci95_high = None
+        if n >= 6 and len(diff_arr) == n:
+            rng = np.random.default_rng(42)
+            draws = 4000
+            try:
+                signs = rng.choice(np.array([-1.0, 1.0], dtype=float), size=(draws, n), replace=True)
+                perm_means = (signs * diff_arr).mean(axis=1)
+                permutation_p = float(np.mean(np.abs(perm_means) >= abs(diff_mean)))
+            except Exception:
+                permutation_p = None
+
+            try:
+                boot_idx = rng.integers(0, n, size=(draws, n))
+                boot_means = diff_arr[boot_idx].mean(axis=1)
+                bootstrap_ci95_low = float(np.quantile(boot_means, 0.025))
+                bootstrap_ci95_high = float(np.quantile(boot_means, 0.975))
+            except Exception:
+                bootstrap_ci95_low = None
+                bootstrap_ci95_high = None
+
         preferred_test = "paired_t"
         preferred_p = float(p_value)
-        if normality_p is not None and normality_p < 0.05 and wilcoxon_p is not None:
-            preferred_test = "wilcoxon"
-            preferred_p = float(wilcoxon_p)
+        if (normality_p is not None and normality_p < 0.05) or zero_diff_ratio >= 0.30:
+            if wilcoxon_p is not None and zero_diff_ratio < 0.50:
+                preferred_test = "wilcoxon"
+                preferred_p = float(wilcoxon_p)
+            elif permutation_p is not None:
+                preferred_test = "permutation_sign_flip"
+                preferred_p = float(permutation_p)
+        elif permutation_p is not None and n < MIN_DOCS_SIGNIFICANCE:
+            preferred_test = "permutation_sign_flip"
+            preferred_p = float(permutation_p)
+
+        if not np.isfinite(preferred_p):
+            preferred_p = 1.0
+
+        if bootstrap_ci95_low is None:
+            bootstrap_ci95_low = float(ci_low)
+        if bootstrap_ci95_high is None:
+            bootstrap_ci95_high = float(ci_high)
+
+        uncertainty_flags: List[str] = []
+        if n < MIN_DOCS_SIGNIFICANCE:
+            uncertainty_flags.append("small_sample")
+        if zero_diff_ratio >= 0.30:
+            uncertainty_flags.append("zero_heavy_differences")
+        if normality_p is not None and normality_p < 0.05:
+            uncertainty_flags.append("non_normal_differences")
 
         return {
             't_statistic': float(t_stat),
@@ -694,17 +762,227 @@ def calculate_statistical_significance(series1: pd.Series, series2: pd.Series) -
             'paired_n': n,
             'normality_p': normality_p,
             'wilcoxon_p': wilcoxon_p,
+            'permutation_p': permutation_p,
             'preferred_test': preferred_test,
             'preferred_p_value': preferred_p,
             'significant': preferred_p < 0.05,
             'effect_size': (diff_mean / diff_std) if diff_std > 0 else 0.0,
             'mean_difference_security_minus_economic': diff_mean,
+            'zero_diff_ratio': zero_diff_ratio,
             'ci95_low': float(ci_low),
             'ci95_high': float(ci_high),
+            'bootstrap_ci95_low': float(bootstrap_ci95_low),
+            'bootstrap_ci95_high': float(bootstrap_ci95_high),
+            'uncertainty_flags': uncertainty_flags,
         }
     except Exception as e:
         logger.error(f"Statistical error: {str(e)}")
         return None
+
+
+def calculate_source_balance_metrics(scored_df: pd.DataFrame) -> Dict[str, object]:
+    if scored_df is None or len(scored_df) == 0:
+        return {
+            "available": False,
+            "dominant_source": "n/a",
+            "dominant_share": 0.0,
+            "source_count": 0,
+            "document_weighted_gap": 0.0,
+            "source_balanced_gap": 0.0,
+            "gap_delta_abs": 0.0,
+            "effective_source_count": 0.0,
+            "by_source": pd.DataFrame(),
+        }
+
+    required_cols = {"economic_score", "security_score", "source"}
+    if not required_cols.issubset(set(scored_df.columns)):
+        return {
+            "available": False,
+            "dominant_source": "n/a",
+            "dominant_share": 0.0,
+            "source_count": 0,
+            "document_weighted_gap": 0.0,
+            "source_balanced_gap": 0.0,
+            "gap_delta_abs": 0.0,
+            "effective_source_count": 0.0,
+            "by_source": pd.DataFrame(),
+        }
+
+    work = scored_df.copy()
+    work["source"] = work["source"].fillna("unknown").astype(str)
+    work["economic_score"] = pd.to_numeric(work["economic_score"], errors="coerce")
+    work["security_score"] = pd.to_numeric(work["security_score"], errors="coerce")
+    work = work.dropna(subset=["economic_score", "security_score"])
+
+    if len(work) == 0:
+        return {
+            "available": False,
+            "dominant_source": "n/a",
+            "dominant_share": 0.0,
+            "source_count": 0,
+            "document_weighted_gap": 0.0,
+            "source_balanced_gap": 0.0,
+            "gap_delta_abs": 0.0,
+            "effective_source_count": 0.0,
+            "by_source": pd.DataFrame(),
+        }
+
+    work["gap"] = work["security_score"] - work["economic_score"]
+    source_stats = (
+        work.groupby("source", dropna=False)
+        .agg(documents=("source", "count"), mean_gap=("gap", "mean"))
+        .reset_index()
+        .sort_values("documents", ascending=False)
+    )
+
+    total_docs = int(source_stats["documents"].sum())
+    source_stats["share"] = source_stats["documents"] / max(1, total_docs)
+    source_stats["weighted_gap_contrib"] = source_stats["mean_gap"] * source_stats["share"]
+
+    dominant_row = source_stats.iloc[0]
+    dominant_source = str(dominant_row["source"])
+    dominant_share = float(dominant_row["share"])
+    document_weighted_gap = float(source_stats["weighted_gap_contrib"].sum())
+    source_balanced_gap = float(source_stats["mean_gap"].mean())
+
+    source_probs = source_stats["share"].to_numpy(dtype=float)
+    entropy_val = float(stats.entropy(source_probs)) if len(source_probs) > 1 else 0.0
+    effective_source_count = float(np.exp(entropy_val)) if entropy_val > 0 else float(len(source_stats))
+
+    return {
+        "available": True,
+        "dominant_source": dominant_source,
+        "dominant_share": dominant_share,
+        "source_count": int(len(source_stats)),
+        "document_weighted_gap": document_weighted_gap,
+        "source_balanced_gap": source_balanced_gap,
+        "gap_delta_abs": float(abs(document_weighted_gap - source_balanced_gap)),
+        "effective_source_count": effective_source_count,
+        "by_source": source_stats,
+    }
+
+
+def build_uncertainty_notes(
+    processed_df: pd.DataFrame,
+    stats_result: Optional[Dict],
+    source_balance: Optional[Dict],
+) -> List[str]:
+    notes: List[str] = []
+
+    doc_count = int(len(processed_df)) if isinstance(processed_df, pd.DataFrame) else 0
+    year_count = int(processed_df["year"].nunique()) if isinstance(processed_df, pd.DataFrame) and "year" in processed_df.columns else 0
+
+    if doc_count < MIN_DOCS_SIGNIFICANCE:
+        notes.append(
+            f"Sample is limited ({doc_count} docs), so inferential claims should be directional rather than definitive."
+        )
+    if year_count < 4:
+        notes.append(
+            f"Time coverage is narrow ({year_count} years), so trend stability remains provisional."
+        )
+
+    if isinstance(source_balance, dict) and source_balance.get("available"):
+        dominant_share = float(source_balance.get("dominant_share", 0.0))
+        if dominant_share >= 0.70:
+            dominant_source = str(source_balance.get("dominant_source", "dominant source"))
+            notes.append(
+                f"Source composition is concentrated ({dominant_source} at {dominant_share * 100:.1f}%), which can bias corpus-level averages."
+            )
+        if float(source_balance.get("gap_delta_abs", 0.0)) >= 0.05:
+            notes.append(
+                "Document-weighted and source-balanced security-vs-economic gaps diverge materially; report both for robustness."
+            )
+
+    if isinstance(stats_result, dict):
+        zero_ratio = float(stats_result.get("zero_diff_ratio", 0.0))
+        if zero_ratio >= 0.30:
+            notes.append(
+                f"Paired differences are zero-heavy ({zero_ratio * 100:.1f}%), so nonparametric/permutation inference is emphasized."
+            )
+        preferred_test = str(stats_result.get("preferred_test", "paired_t"))
+        if preferred_test != "paired_t":
+            notes.append(
+                f"Preferred significance result uses `{preferred_test}` to reduce sensitivity to normality and sparsity assumptions."
+            )
+
+    return notes
+
+
+def build_tone_summary(tone_analyzer: Optional[ToneAnalyzer], tone_df: pd.DataFrame) -> Dict[str, object]:
+    if tone_analyzer is None or tone_df is None or len(tone_df) == 0:
+        return {
+            "available": False,
+            "dominant_tone": "n/a",
+            "dominant_sentiment": "n/a",
+            "avg_urgency": None,
+            "tone_distribution": {},
+            "sentiment_distribution": {},
+        }
+
+    tone_dist = tone_analyzer.get_tone_distribution(tone_df) if hasattr(tone_analyzer, "get_tone_distribution") else {}
+    sentiment_dist = tone_analyzer.get_sentiment_distribution(tone_df) if hasattr(tone_analyzer, "get_sentiment_distribution") else {}
+
+    dominant_tone = "n/a"
+    if isinstance(tone_dist, dict) and len(tone_dist) > 0:
+        dominant_tone = str(max(tone_dist.items(), key=lambda kv: kv[1])[0])
+
+    dominant_sentiment = "n/a"
+    if isinstance(sentiment_dist, dict) and len(sentiment_dist) > 0:
+        dominant_sentiment = str(max(sentiment_dist.items(), key=lambda kv: kv[1])[0])
+
+    urgency_series = pd.to_numeric(tone_df.get("urgency_score", pd.Series(dtype=float)), errors="coerce").dropna()
+    avg_urgency = float(urgency_series.mean()) if len(urgency_series) > 0 else None
+
+    return {
+        "available": True,
+        "dominant_tone": dominant_tone,
+        "dominant_sentiment": dominant_sentiment,
+        "avg_urgency": avg_urgency,
+        "tone_distribution": tone_dist if isinstance(tone_dist, dict) else {},
+        "sentiment_distribution": sentiment_dist if isinstance(sentiment_dist, dict) else {},
+    }
+
+
+def build_theme_summary(thematic_analysis: Dict) -> Dict[str, object]:
+    if not isinstance(thematic_analysis, dict):
+        return {
+            "available": False,
+            "topic_count": 0,
+            "top_topics": [],
+            "unique_keyword_count": 0,
+        }
+
+    overall = thematic_analysis.get("overall_themes", {})
+    if not isinstance(overall, dict) or len(overall) == 0:
+        return {
+            "available": False,
+            "topic_count": 0,
+            "top_topics": [],
+            "unique_keyword_count": 0,
+        }
+
+    top_topics = []
+    keyword_pool: List[str] = []
+    for topic_id, words in sorted(overall.items()):
+        if not isinstance(words, list):
+            continue
+        clean_words = [str(word).strip() for word in words if str(word).strip()]
+        if not clean_words:
+            continue
+        keyword_pool.extend(clean_words)
+        top_topics.append(
+            {
+                "topic_id": int(topic_id) if str(topic_id).isdigit() else str(topic_id),
+                "keywords": clean_words[:6],
+            }
+        )
+
+    return {
+        "available": len(top_topics) > 0,
+        "topic_count": int(len(top_topics)),
+        "top_topics": top_topics,
+        "unique_keyword_count": int(len(set(keyword_pool))),
+    }
 
 
 def build_overview_verdicts(
@@ -713,6 +991,8 @@ def build_overview_verdicts(
     scored_df: pd.DataFrame,
     yearly_df: pd.DataFrame,
     stats_result: Dict,
+    source_balance: Dict,
+    uncertainty_notes: List[str],
     tone_df: pd.DataFrame,
     thematic_analysis: Dict,
     external_ctx: Dict,
@@ -735,6 +1015,12 @@ def build_overview_verdicts(
         strategic_text = f"Economic signal leads by {econ - sec:.4f}."
     else:
         strategic_text = "Economic and security signals are balanced."
+    if isinstance(source_balance, dict) and source_balance.get("available"):
+        strategic_text = (
+            f"{strategic_text} Source-balanced gap (security minus economic) is "
+            f"{float(source_balance.get('source_balanced_gap', 0.0)):.4f} across "
+            f"{int(source_balance.get('source_count', 0))} sources."
+        )
     verdicts.append({"area": "2) Economic vs Security", "verdict": strategic_text})
 
     if tone_df is not None and len(tone_df) > 0 and "urgency_score" in tone_df.columns:
@@ -804,6 +1090,14 @@ def build_overview_verdicts(
         "area": "Cross-Source Contradictions",
         "verdict": f"{contradiction_count} potential contradiction pairs detected across sources.",
     })
+
+    if uncertainty_notes:
+        verdicts.append(
+            {
+                "area": "Uncertainty",
+                "verdict": " ".join(uncertainty_notes[:3]),
+            }
+        )
 
     return verdicts
 
