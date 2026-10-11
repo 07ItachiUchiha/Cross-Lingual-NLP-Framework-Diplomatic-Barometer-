@@ -1,0 +1,108 @@
+{
+  "run_started_utc": "2026-02-18T11:25:31.378822+00:00",
+  "run_finished_utc": "2026-02-18T11:29:02.905774+00:00",
+  "selected_sources": [
+    {
+      "name": "MEA India",
+      "code": "MEA",
+      "rationale": "Primary official source for India's bilateral statements and press releases."
+    },
+    {
+      "name": "MOFA Japan",
+      "code": "MOFA",
+      "rationale": "Primary official Japanese foreign affairs source for India-related diplomacy."
+    },
+    {
+      "name": "Embassy of Japan in India",
+      "code": "EMBJPIN",
+      "rationale": "Official mission-level announcements and bilateral event updates."
+    },
+    {
+      "name": "PIB India",
+      "code": "PIB",
+      "rationale": "Official India government press releases containing diplomatic updates."
+    },
+    {
+      "name": "JETRO Reports",
+      "code": "JETRO",
+      "rationale": "Official Japan trade/publication source relevant to India-Japan economic diplomacy."
+    }
+  ],
+  "summary": {
+    "total_documents": 32,
+    "successful_sources": 4,
+    "reachable_sources": 5,
+    "failed_sources": 0
+  },
+  "sources": [
+    {
+      "source": "MEA India",
+      "code": "MEA",
+      "rationale": "Primary official source for India's bilateral statements and press releases.",
+      "status": "ok",
+      "documents": 8,
+      "candidate_links_seen": 13,
+      "errors": [],
+      "urls_tested": [
+        "https://www.mea.gov.in/press-releases.htm",
+        "https://www.mea.gov.in/bilateral-documents.htm?dtl/1/india-japan-relations",
+        "https://www.mea.gov.in/"
+      ]
+    },
+    {
+      "source": "MOFA Japan",
+      "code": "MOFA",
+      "rationale": "Primary official Japanese foreign affairs source for India-related diplomacy.",
+      "status": "ok",
+      "documents": 8,
+      "candidate_links_seen": 28,
+      "errors": [],
+      "urls_tested": [
+        "https://www.mofa.go.jp/region/asia-paci/india/index.html",
+        "https://www.mofa.go.jp/"
+      ]
+    },
+    {
+      "source": "Embassy of Japan in India",
+      "code": "EMBJPIN",
+      "rationale": "Official mission-level announcements and bilateral event updates.",
+      "status": "ok",
+      "documents": 8,
+      "candidate_links_seen": 30,
+      "errors": [],
+      "urls_tested": [
+        "https://www.in.emb-japan.go.jp/"
+      ]
+    },
+    {
+      "source": "PIB India",
+      "code": "PIB",
+      "rationale": "Official India government press releases containing diplomatic updates.",
+      "status": "reachable_no_docs",
+      "documents": 0,
+      "candidate_links_seen": 0,
+      "errors": [],
+      "urls_tested": [
+        "https://pib.gov.in/",
+        "https://pib.gov.in/PressReleasePage.aspx"
+      ]
+    },
+    {
+      "source": "JETRO Reports",
+      "code": "JETRO",
+      "rationale": "Official Japan trade/publication source relevant to India-Japan economic diplomacy.",
+      "status": "ok",
+      "documents": 8,
+      "candidate_links_seen": 14,
+      "errors": [],
+      "urls_tested": [
+        "https://www.jetro.go.jp/en/reports/"
+      ]
+    }
+  ],
+  "outputs": {
+    "documents_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\live_scrape_20260218_112531.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\live_scrape_report_20260218_112531.json"
+  },
+  "pass": true
+}

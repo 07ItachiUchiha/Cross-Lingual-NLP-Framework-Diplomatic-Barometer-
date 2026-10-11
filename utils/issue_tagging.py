@@ -63,6 +63,9 @@ def add_issue_tags(df: pd.DataFrame, text_column: str = "cleaned") -> pd.DataFra
         return pd.DataFrame()
 
     out = df.copy()
+    # Deduplicate columns in case input dataframe has duplicate column names
+    out = out.loc[:, ~out.columns.duplicated()].copy()
+
     if text_column not in out.columns:
         if "content" in out.columns:
             text_column = "content"
@@ -73,7 +76,11 @@ def add_issue_tags(df: pd.DataFrame, text_column: str = "cleaned") -> pd.DataFra
             out["primary_issue"] = "other"
             return out
 
-    detected = out[text_column].fillna("").astype(str).map(_detect_tags)
+    col_data = out[text_column]
+    if isinstance(col_data, pd.DataFrame):
+        col_data = col_data.iloc[:, 0]
+
+    detected = col_data.fillna("").astype(str).map(_detect_tags)
     out["issue_tags"] = detected.map(lambda x: x[0])
 
     score_maps = detected.map(lambda x: x[1])
@@ -92,10 +99,10 @@ def add_issue_tags(df: pd.DataFrame, text_column: str = "cleaned") -> pd.DataFra
 
     out["primary_issue"] = out.apply(primary_issue, axis=1)
 
-    equity_regions_detected = out[text_column].fillna("").astype(str).map(
+    equity_regions_detected = col_data.fillna("").astype(str).map(
         lambda t: _detect_equity_dimension(t, EQUITY_REGION_KEYWORDS)
     )
-    equity_groups_detected = out[text_column].fillna("").astype(str).map(
+    equity_groups_detected = col_data.fillna("").astype(str).map(
         lambda t: _detect_equity_dimension(t, EQUITY_COMMUNITY_KEYWORDS)
     )
 

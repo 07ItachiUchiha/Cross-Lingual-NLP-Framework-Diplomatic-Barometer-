@@ -1,0 +1,9 @@
+{
+  "generated_at_utc": "2026-02-20T10:53:31.637116+00:00",
+  "stats_data_id": "0003065345",
+  "rows": 2000,
+  "outputs": {
+    "rows_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\estat_rows_estat_20260220_105331.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\estat_report_estat_20260220_105331.json"
+  }
+}

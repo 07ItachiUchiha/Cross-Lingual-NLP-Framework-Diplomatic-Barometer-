@@ -16,6 +16,7 @@ from preprocessing.preprocessor import Preprocessor
 from analysis.strategic_shift_enhanced import StrategicShiftAnalyzer
 from analysis.tone_analyzer import ToneAnalyzer
 from analysis.thematic_clustering import ThematicAnalyzer
+from evaluation.binary_classifier import compare_binary_ml_with_lexicon
 from utils.helpers import (
     save_analysis_results,
     export_to_excel,
@@ -32,8 +33,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def run_full_pipeline():
-    """Execute the complete analysis pipeline"""
+def run_full_pipeline(include_tone: bool = True):
+    """Execute the complete analysis pipeline.
+    
+    Parameters:
+        include_tone: bool (default True for test compatibility).
+                      Tone & sentiment heuristics are marked as legacy baseline for thesis scope.
+    """
     
     logger.info("=" * 70)
     logger.info("CROSS-LINGUAL NLP FRAMEWORK - FULL ANALYSIS PIPELINE")
@@ -76,24 +82,44 @@ def run_full_pipeline():
         logger.info("\n[STEP 2] Preprocessing documents...")
         preprocessor = Preprocessor()
         processed_df = preprocessor.process_dataframe(df, content_column='content')
-        logger.info(f"✓ Preprocessing complete")
+        logger.info(f" Preprocessing complete")
         logger.info(f"  Documents processed: {len(processed_df)}")
         
         # Step 3: Strategic Shift Analysis
         logger.info("\n[STEP 3] Analyzing strategic shift...")
         shift_analyzer = StrategicShiftAnalyzer()
         shift_report, scored_df, yearly_df = shift_analyzer.generate_shift_report(processed_df)
-        logger.info(f"✓ Strategic shift analysis complete")
+        logger.info(f" Strategic shift analysis complete")
         logger.info(f"  Crossover year: {shift_report['crossover_year']}")
         logger.info(f"  Overall trend: {shift_report['trend']}")
         
-        # Step 4: Tone and Sentiment Analysis
-        logger.info("\n[STEP 4] Analyzing tone and sentiment...")
-        tone_analyzer = ToneAnalyzer()
-        tone_df = tone_analyzer.process_dataframe(processed_df, text_column='cleaned')
-        logger.info(f"✓ Tone analysis complete")
-        tone_dist = tone_analyzer.get_tone_distribution(tone_df)
-        logger.info(f"  Tone distribution: {tone_dist}")
+        # Step 4: Tone and Sentiment Analysis (Legacy Heuristic Baseline)
+        if include_tone:
+            logger.info("\n[STEP 4] Analyzing tone and sentiment (Legacy Heuristic Baseline)...")
+            tone_analyzer = ToneAnalyzer()
+            tone_df = tone_analyzer.process_dataframe(processed_df, text_column='cleaned')
+            logger.info(f" Tone analysis complete")
+            tone_dist = tone_analyzer.get_tone_distribution(tone_df)
+            sentiment_dist = tone_analyzer.get_sentiment_distribution(tone_df)
+            logger.info(f"  Tone distribution: {tone_dist}")
+        else:
+            logger.info("\n[STEP 4] Tone analysis skipped (decoupled for thesis research focus).")
+            tone_df = processed_df.copy()
+            tone_dist = {}
+            sentiment_dist = {}
+
+        # Step 4b: supervised binary validation baseline (not the primary model)
+        logger.info("\n[STEP 4b] Running binary ML validation baseline...")
+        binary_validation = compare_binary_ml_with_lexicon(scored_df=scored_df, text_col='cleaned')
+        if binary_validation.get("available"):
+            doc_cmp = binary_validation.get("document_comparison", {})
+            logger.info(
+                " Binary validation complete "
+                f"(CV macro-F1={binary_validation.get('macro_f1')}, "
+                f"lexicon agreement={doc_cmp.get('agreement_rate')})"
+            )
+        else:
+            logger.warning(f"Binary validation unavailable: {binary_validation.get('warning')}")
         
         # Step 5: Thematic Analysis
         logger.info("\n[STEP 5] Performing thematic analysis...")
@@ -102,7 +128,7 @@ def run_full_pipeline():
             processed_df,
             text_column='cleaned'
         )
-        logger.info(f"✓ Thematic analysis complete")
+        logger.info(f" Thematic analysis complete")
         logger.info(f"  Topics discovered: {theme_analysis['n_topics']}")
         
         # Step 6: Compile Results
@@ -307,9 +333,11 @@ def run_full_pipeline():
                 'crossover_year': shift_report['crossover_year'],
                 'trend': shift_report['trend']
             },
+            'binary_ml_validation': binary_validation,
             'tone_and_sentiment': {
+                'status': 'legacy_heuristic_baseline' if not include_tone else 'active',
                 'tone_distribution': tone_dist,
-                'sentiment_distribution': tone_analyzer.get_sentiment_distribution(tone_df)
+                'sentiment_distribution': sentiment_dist,
             },
             'themes': {
                 'n_topics': theme_analysis['n_topics'],
@@ -327,9 +355,8 @@ def run_full_pipeline():
                 evidence_df = pd.DataFrame(evidence_rows)
                 evidence_df["review_decision"] = ""
                 evidence_df["review_notes"] = ""
-                stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                evidence_csv = PROCESSED_DATA_DIR / f"evidence_review_{stamp}.csv"
-                evidence_xlsx = PROCESSED_DATA_DIR / f"evidence_review_{stamp}.xlsx"
+                evidence_csv = PROCESSED_DATA_DIR / "evidence_review.csv"
+                evidence_xlsx = PROCESSED_DATA_DIR / "evidence_review.xlsx"
                 evidence_df.to_csv(evidence_csv, index=False, encoding='utf-8')
                 evidence_df.to_excel(evidence_xlsx, index=False)
                 hygiene.setdefault('evidence', {})['exports'] = {

@@ -1,0 +1,40 @@
+{
+  "run_started_utc": "2026-02-20T10:54:42.556177+00:00",
+  "run_finished_utc": "2026-02-20T10:55:11.909972+00:00",
+  "query": "India Japan diplomacy",
+  "built_query": {
+    "plain": "India Japan diplomacy diplomacy bilateral India Japan",
+    "boolean": "(India Japan diplomacy) AND (diplomacy OR bilateral) AND (India OR Japan)"
+  },
+  "language": "en",
+  "timeframe_hours": 24,
+  "max_per_provider": 5,
+  "provider_counts": {
+    "newsdata": 5,
+    "newsapi": 5,
+    "worldnews": 5,
+    "gdelt": 0
+  },
+  "provider_status": {
+    "newsdata": {
+      "returned": 5,
+      "error": null
+    },
+    "newsapi": {
+      "returned": 5,
+      "error": null
+    },
+    "worldnews": {
+      "returned": 5,
+      "error": null
+    },
+    "gdelt": {
+      "returned": 0,
+      "error": "http_429"
+    }
+  },
+  "total_items": 15,
+  "outputs": {
+    "signals_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\external_signals_20260220_105511.csv"
+  }
+}

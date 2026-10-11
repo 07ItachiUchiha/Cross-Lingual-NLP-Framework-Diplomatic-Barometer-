@@ -87,6 +87,7 @@ class TestPipeline:
         results = result['results']
         assert 'metadata' in results
         assert 'strategic_shift' in results
+        assert 'binary_ml_validation' in results
         assert 'tone_and_sentiment' in results
         assert 'themes' in results
 

@@ -1,0 +1,11 @@
+{
+  "generated_at_utc": "2026-02-20T17:10:31.368072+00:00",
+  "input_curated_review_csv": "data\\processed\\url_backfill_curated_review_20260220_171008.csv",
+  "medium_min_confidence": 0.4,
+  "recommend_approve_confidence": 0.52,
+  "approval_rows": 5,
+  "outputs": {
+    "approval_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\processed\\url_backfill_semi_auto_approval_20260220_171031.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\processed\\url_backfill_semi_auto_report_20260220_171031.json"
+  }
+}

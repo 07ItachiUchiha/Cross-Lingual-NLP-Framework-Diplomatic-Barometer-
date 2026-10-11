@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, Optional
 
 import pandas as pd
 
@@ -15,21 +15,22 @@ def _score_source_diversity(df: pd.DataFrame) -> float:
     if df is None or len(df) == 0 or "source" not in df.columns:
         return 0.0
     unique_sources = int(df["source"].fillna("unknown").astype(str).nunique())
-    return min(10.0, (unique_sources / 5.0) * 10.0)
+    # In bilateral diplomacy, balance across 2 official ministries (e.g., MEA and MOFA) is target
+    return min(15.0, (unique_sources / 2.0) * 15.0)
 
 
 def _score_source_credibility(df: pd.DataFrame) -> float:
     if df is None or len(df) == 0:
         return 0.0
     _, corpus_cred = summarize_source_credibility(df)
-    return min(10.0, max(0.0, corpus_cred) * 10.0)
+    return min(15.0, max(0.0, corpus_cred) * 15.0)
 
 
 def _score_temporal_coverage(df: pd.DataFrame) -> float:
     if df is None or len(df) == 0 or "year" not in df.columns:
         return 0.0
     unique_years = int(pd.to_numeric(df["year"], errors="coerce").dropna().nunique())
-    return min(15.0, (unique_years / 15.0) * 15.0)
+    return min(20.0, (unique_years / 15.0) * 20.0)
 
 
 def _score_statistical_strength(stats_result: Dict) -> float:
@@ -56,17 +57,14 @@ def _score_statistical_strength(stats_result: Dict) -> float:
 
 
 def _score_external_coverage(external_ctx: Dict) -> float:
-    if not external_ctx:
-        return 0.0
-    keys = ["comtrade_yearly", "estat_rows", "ogd_rows", "rss_year", "external_signals"]
-    loaded = sum(1 for key in keys if external_ctx.get(key, {}).get("available"))
-    return (loaded / len(keys)) * 15.0
+    # Optional legacy adapter: external macroeconomic scrapers decoupled from thesis scope
+    return 0.0
 
 
 def build_confidence_summary(
     processed_df: pd.DataFrame,
     stats_result: Dict,
-    external_ctx: Dict,
+    external_ctx: Optional[Dict] = None,
 ) -> Dict:
     n_docs = int(len(processed_df)) if processed_df is not None else 0
 
@@ -76,7 +74,6 @@ def build_confidence_summary(
         "source_credibility": _score_source_credibility(processed_df),
         "temporal_coverage": _score_temporal_coverage(processed_df),
         "statistical_strength": _score_statistical_strength(stats_result),
-        "external_coverage": _score_external_coverage(external_ctx),
     }
 
     total_score = round(sum(components.values()), 2)

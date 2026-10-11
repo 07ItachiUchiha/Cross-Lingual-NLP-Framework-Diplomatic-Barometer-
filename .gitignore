@@ -16,6 +16,7 @@ build/
 dist/
 *.egg-info/
 .eggs/
+Documents/
 
 # Virtual environments
 venv/
@@ -94,6 +95,8 @@ models/
 weights/
 checkpoints/
 snapshots/
+figures/
+
 
 # Local env overrides
 .env.local
@@ -116,3 +119,4 @@ FutureScope.md
 Political.pdf
 PLANNING.md
 india_france_research_report.md
+context.txt

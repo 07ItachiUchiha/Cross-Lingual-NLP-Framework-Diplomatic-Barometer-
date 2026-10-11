@@ -244,7 +244,7 @@ def run_fetch_external_signals(query: str, language: str = "en", max_per_provide
     print("\n[EXTERNAL] Fetching external signals (news + GDELT)...")
     print("-" * 70)
     try:
-        from scrapers.external_signals import ExternalSignalsFetcher, ExternalSignalsConfig
+        from archive.legacy_scrapers.external_signals import ExternalSignalsFetcher, ExternalSignalsConfig
         from utils.config import get_external_api_status
 
         status = get_external_api_status()
@@ -275,7 +275,7 @@ def run_import_comtrade(path: str):
     print("\n[COMTRADE] Importing Comtrade export file...")
     print("-" * 70)
     try:
-        from scrapers.comtrade_ingestion import ingest_from_file
+        from archive.legacy_scrapers.comtrade_ingestion import ingest_from_file
 
         report = ingest_from_file(path, tag="import")
         outputs = report.get("outputs", {})
@@ -301,7 +301,7 @@ def run_fetch_comtrade(
     print("\n[COMTRADE] Fetching Comtrade Final Data via API...")
     print("-" * 70)
     try:
-        from scrapers.comtrade_ingestion import ComtradeQuery, ingest_from_api
+        from archive.legacy_scrapers.comtrade_ingestion import ComtradeQuery, ingest_from_api
 
         q = ComtradeQuery(
             typeCode="C",
@@ -332,7 +332,7 @@ def run_fetch_rss(urls: list[str], since_days: int = 14, max_items: int = 200):
     print("\n[RSS] Fetching RSS/Atom feeds...")
     print("-" * 70)
     try:
-        from scrapers.rss_ingestion import RssFetchConfig, fetch_rss
+        from archive.legacy_scrapers.rss_ingestion import RssFetchConfig, fetch_rss
 
         cfg = RssFetchConfig(urls=tuple(urls), since_days=int(since_days), max_items=int(max_items))
         report = fetch_rss(cfg)
@@ -350,7 +350,7 @@ def run_summarize_rss(items_csv: str):
     print("\n[RSS] Summarizing RSS items...")
     print("-" * 70)
     try:
-        from scrapers.rss_summary import summarize_rss_items
+        from archive.legacy_scrapers.rss_summary import summarize_rss_items
 
         report = summarize_rss_items(items_csv)
         outputs = report.get("outputs", {})
@@ -593,6 +593,31 @@ def run_refresh_corpora(
         sys.exit(1)
 
 
+def run_unified_harvest(country_pair_str: str = "all", max_docs: int = 600):
+    """Run the Unified Multi-Source Harvester across MEA, MOFA, MEAE, Wayback, UNTC, and IDSA."""
+    print("\n[UNIFIED-HARVEST] Starting Multi-Source Diplomatic Harvester...")
+    print("-" * 70)
+    try:
+        from scrapers.harvesting import UnifiedHarvester
+
+        harvester = UnifiedHarvester()
+        pairs = []
+        if country_pair_str in ["india-japan", "all"]:
+            pairs.append(("india", "japan"))
+        if country_pair_str in ["india-france", "all"]:
+            pairs.append(("india", "france"))
+
+        for cp in pairs:
+            print(f"\nHarvesting {cp[0].title()}–{cp[1].title()}...")
+            df = harvester.harvest_corpus(cp, max_docs_limit=int(max_docs))
+            print(f"  Canonical corpus updated: {len(df)} documents.")
+        harvester.close()
+        print("\nUnified harvest completed successfully.")
+    except Exception as e:
+        print(f"  Unified harvest failed: {e}")
+        sys.exit(1)
+
+
 def run_api():
     """Start FastAPI backend."""
     print("\n[API] Starting FastAPI backend on http://localhost:8000")
@@ -640,23 +665,24 @@ def run_evaluate():
     # Golden dataset F1
     try:
         from evaluation.golden_dataset import GoldenDataset, F1Evaluator
+        from evaluation.binary_classifier import evaluate_binary_classifier
+        from rag.rag_pipeline import RAGPipeline
         ds = GoldenDataset()
-        evaluator = F1Evaluator()
-        # Baseline keyword classifier
-        preds, labels = [], []
-        for item in ds.get_all():
-            text_lower = item["text"].lower()
-            if any(w in text_lower for w in ["trade", "economic", "gdp", "investment", "cepa"]):
-                preds.append("Economic")
-            elif any(w in text_lower for w in ["defense", "military", "security", "naval"]):
-                preds.append("Security")
-            else:
-                preds.append("Cultural")
-            labels.append(item["label"])
-        result = evaluator.evaluate(labels, preds)
+        pipe = RAGPipeline(llm_backend="none")
+        preds = [pipe.classify_text(text) for text in ds.get_texts()]
+        result = F1Evaluator(ds.get_labels(), preds).full_report()
+        binary = evaluate_binary_classifier(ds.to_dataframe())
         print(f"  Golden Dataset — Macro F1: {result['macro_f1']:.3f}")
         for cls, metrics in result["per_class"].items():
             print(f"    {cls}: P={metrics['precision']:.3f} R={metrics['recall']:.3f} F1={metrics['f1']:.3f}")
+        if binary.get("available"):
+            print(
+                "  Binary ML validation (Economic vs Security only): "
+                f"Macro F1={binary['macro_f1']:.3f}, Accuracy={binary['accuracy']:.3f}, "
+                f"Folds={binary['cv_folds']}"
+            )
+        else:
+            print(f"  Binary ML validation unavailable: {binary.get('warning')}")
     except Exception as e:
         print(f"  Golden dataset evaluation failed: {e}")
 
@@ -751,7 +777,8 @@ def main():
     parser.add_argument("--corpus-max-docs", type=int, default=600, help="Max documents to keep for --build-official-corpus")
     parser.add_argument("--corpus-max-urls-per-year", type=int, default=80, help="Max GDELT URLs per year to try")
     parser.add_argument("--corpus-min-content-chars", type=int, default=850, help="Minimum extracted chars per page for corpus builders")
-    parser.add_argument("--promote-corpus", action="store_true", help="Overwrite canonical corpus with the newly built official corpus")
+    parser.add_argument("--unified-harvest", action="store_true", help="Run Unified Multi-Source Harvester across all 4 archival methods")
+    parser.add_argument("--harvest-pair", type=str, default="all", choices=["india-japan", "india-france", "all"], help="Pair to harvest")
     parser.add_argument("--full", action="store_true", help="Pipeline + API + Dashboard")
     parser.add_argument("--ingest", action="store_true", help="Ingest documents into RAG")
     parser.add_argument("--evaluate", action="store_true", help="Run evaluation suite")
@@ -843,7 +870,7 @@ def main():
     if args.fetch_news:
         # Ensure .env is loaded before instantiating the fetcher (it reads env vars at init time)
         from utils.config import get_external_api_status
-        from scrapers.external_signals import ExternalSignalsConfig, ExternalSignalsFetcher
+        from archive.legacy_scrapers.external_signals import ExternalSignalsConfig, ExternalSignalsFetcher
 
         status = get_external_api_status()
 
@@ -905,6 +932,11 @@ def main():
             max_urls_per_year=args.corpus_max_urls_per_year,
             min_content_chars=args.corpus_min_content_chars,
         )
+        print("\nDone.")
+        return
+
+    if args.unified_harvest:
+        run_unified_harvest(country_pair_str=args.harvest_pair, max_docs=args.corpus_max_docs)
         print("\nDone.")
         return
 
@@ -997,7 +1029,7 @@ def main():
         print("\n[OGD] Fetching data.gov.in dataset...")
         print("-" * 70)
         try:
-            from scrapers.data_gov_in_ingestion import OGDQuery, fetch_and_write
+            from archive.legacy_scrapers.data_gov_in_ingestion import OGDQuery, fetch_and_write
 
             q = OGDQuery(
                 resource_id=str(args.ogd_resource_id),
@@ -1025,7 +1057,7 @@ def main():
         print("\n[e-Stat] Fetching dataset...")
         print("-" * 70)
         try:
-            from scrapers.estat_ingestion import EStatQuery, fetch_and_write
+            from archive.legacy_scrapers.estat_ingestion import EStatQuery, fetch_and_write
 
             q = EStatQuery(
                 stats_data_id=str(args.estat_stats_data_id),

@@ -1,0 +1,13 @@
+{
+  "generated_at_utc": "2026-02-20T10:53:47.991683+00:00",
+  "feeds": [
+    "https://data.gov.in/backend/dms/v1/rss.xml",
+    "https://www.mea.gov.in/rss.xml"
+  ],
+  "since_days": 365,
+  "items": 0,
+  "outputs": {
+    "items_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\rss_items_20260220_105347.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\rss_report_20260220_105347.json"
+  }
+}

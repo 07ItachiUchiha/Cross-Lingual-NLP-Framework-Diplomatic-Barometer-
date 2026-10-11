@@ -1,0 +1,11 @@
+{
+  "run_started_utc": "2026-02-20T06:20:24.927555+00:00",
+  "run_finished_utc": "2026-02-20T06:20:50.081525+00:00",
+  "query": "India Japan",
+  "language": "en",
+  "timeframe_hours": 48,
+  "max_per_provider": 5,
+  "provider_counts": {},
+  "total_items": 0,
+  "outputs": {}
+}

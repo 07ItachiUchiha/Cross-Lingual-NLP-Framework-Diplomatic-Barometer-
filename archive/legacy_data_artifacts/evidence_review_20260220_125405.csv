@@ -1,0 +1,8 @@
+date,year,title,source,url,economic_score,security_score,shift_signal,review_decision,review_notes
+2019-12-15 00:00:00,2019,India-Japan Joint Statement on Defence and Security Cooperation,MEA,nan,0.0625,0.25,0.1875,,
+2019-12-15 00:00:00,2019,India-Japan Annual Defence Dialogue Joint Statement 2019,MEA,nan,0.058823529411764705,0.21568627450980393,0.1568627450980392,,
+2018-10-29 00:00:00,2018,India-Japan Vision Statement on Free and Open Indo-Pacific,MOFA,nan,0.07547169811320754,0.18867924528301888,0.11320754716981134,,
+2018-10-29 00:00:00,2018,India-Japan Joint Statement on Maritime Security Cooperation,MOFA,nan,0.08163265306122448,0.16326530612244897,0.08163265306122448,,
+2020-10-27 00:00:00,2020,India-Japan Joint Statement on Acquisition and Cross-Servicing Agreement,MOFA,nan,0.038461538461538464,0.07692307692307693,0.038461538461538464,,
+2019-06-27 00:00:00,2019,India-Japan Joint Statement at G20 Osaka Summit,MOFA,nan,0.06,0.08,0.020000000000000004,,
+2020-09-10 00:00:00,2020,India-Japan Joint Statement on Virtual Summit During COVID-19,MEA,nan,0.09615384615384616,0.057692307692307696,-0.038461538461538464,,

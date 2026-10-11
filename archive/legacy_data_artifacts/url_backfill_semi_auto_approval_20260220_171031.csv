@@ -1,0 +1,6 @@
+row_index,source,date,title,current_url,candidate_url,candidate_title,candidate_confidence,candidate_rationale,decision,review_notes
+3,MEA,2003-05-16,India-Japan Joint Declaration on Enhanced Cooperation,,https://www.mea.gov.in/visit-of-all-party-delegations-operation-sindoor.htm,Visit of All Party Delegations (OPERATION SINDOOR),0.422,"sim=0.495, token_overlap=0.000, domain_match=1; margin=0.033",REJECT,
+5,MEA,2005-04-29,India-Japan Strategic and Global Partnership Declaration,,https://www.mea.gov.in/bilateral-documents.htm?dtl/26466/Labour_Mobility_Partnership_LMPA,Labour Mobility Partnership (LMPA),0.438,"sim=0.455, token_overlap=0.125, domain_match=1; margin=0.044",REJECT,
+6,MEA,2005-12-15,Joint Statement on India-Japan Bilateral Relations 2005,,https://www.mea.gov.in/bilateral-briefs.htm,Bilateral Relations,0.532,"sim=0.514, token_overlap=0.333, domain_match=1; margin=0.103",APPROVE,
+7,MEA,2006-12-15,India-Japan Joint Statement on Economic Partnership Agreement,,https://www.mea.gov.in/bvwa-menu.htm,Visa Exemption / Waiver Agreements,0.407,"sim=0.468, token_overlap=0.000, domain_match=1; margin=0.023",REJECT,
+17,MEA,2013-05-29,India-Japan Joint Statement on Strengthening Defence Relations,,https://www.mea.gov.in/foreign-relations.htm,Briefs on Foreign Relations,0.422,"sim=0.427, token_overlap=0.125, domain_match=1; margin=0.026",REJECT,

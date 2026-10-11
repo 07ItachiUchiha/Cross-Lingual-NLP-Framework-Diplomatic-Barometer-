@@ -26,6 +26,7 @@ from preprocessing.preprocessor import Preprocessor
 from analysis.strategic_shift_enhanced import StrategicShiftAnalyzer
 from analysis.tone_analyzer import ToneAnalyzer
 from analysis.thematic_clustering import ThematicAnalyzer
+from evaluation.binary_classifier import compare_binary_ml_with_lexicon
 from utils.country_config import (
     COUNTRIES,
     COUNTRY_PAIRS,
@@ -33,7 +34,6 @@ from utils.country_config import (
     get_ministry_name,
     get_country_pair_label,
 )
-from utils.pdf_report_generator import PDFReportGenerator, REPORTLAB_AVAILABLE
 from utils.evidence_confidence import build_confidence_summary
 from utils.source_credibility import summarize_source_credibility, weighted_focus_metrics
 from utils.contradiction_detection import detect_contradictions
@@ -43,10 +43,6 @@ from utils.issue_tagging import (
     summarize_issue_trends,
     summarize_equity_dimensions,
 )
-from utils.policy_triggers import evaluate_policy_triggers, triggers_to_dataframe
-from utils.decision_options import build_decision_options, decision_options_to_dataframe
-from utils.quality_audit import run_quarterly_quality_audit
-from utils.pilot_validation import build_pilot_pack
 from dashboard.page_renderers import render_overview_page, render_stats_page
 
 logging.basicConfig(level=logging.INFO)
@@ -103,52 +99,26 @@ def _corpus_cache_token(country_pair: Optional[Tuple[str, str]] = None) -> str:
 
 
 def _external_cache_token() -> str:
-    project_root = Path(__file__).resolve().parent.parent
-    patterns = [
-        (project_root / "data" / "processed", "comtrade_yearly_*.csv"),
-        (project_root / "data" / "raw", "estat_rows_*.csv"),
-        (project_root / "data" / "raw", "data_gov_in_*.csv"),
-        (project_root / "data" / "raw", "rss_counts_by_year_*.csv"),
-        (project_root / "data" / "raw", "external_signals_*.csv"),
-        (project_root / "data" / "raw", "rss_report_*.json"),
-    ]
-
-    signatures: List[str] = []
-    for folder, pattern in patterns:
-        if not folder.exists():
-            signatures.append(f"{folder.name}:{pattern}:missing")
-            continue
-        files = sorted(folder.glob(pattern), key=lambda p: p.stat().st_mtime if p.exists() else 0.0, reverse=True)
-        if files:
-            signatures.append(_file_signature(files[0]))
-        else:
-            signatures.append(f"{folder.name}:{pattern}:none")
-    return "|".join(signatures)
-
-
+    return "decoupled"
 def _build_india_france_corpus_from_dashboard(
-    start_year: int = 2010,
+    start_year: int = 2000,
     end_year: int = 2026,
-    max_docs: int = 180,
-    max_urls_per_year: int = 35,
+    max_docs: int = 500,
+    max_urls_per_year: int = 50,
     min_content_chars: int = 500,
 ) -> Dict[str, object]:
-    from scrapers.india_france_corpus_builder import IndiaFranceCorpusBuilder, IndiaFranceBuildConfig
+    from scrapers.harvesting import UnifiedHarvester
 
-    builder = IndiaFranceCorpusBuilder()
+    harvester = UnifiedHarvester()
     try:
-        cfg = IndiaFranceBuildConfig(
-            start_year=int(start_year),
-            end_year=int(end_year),
-            max_docs_total=int(max_docs),
-            max_urls_per_year=int(max_urls_per_year),
-            min_content_chars=int(min_content_chars),
+        df = harvester.harvest_corpus(
+            ("india", "france"),
+            max_docs_limit=int(max_docs),
+            min_chars_limit=int(min_content_chars),
         )
-        result = builder.build(cfg)
-        report = result.get("report", {}) if isinstance(result, dict) else {}
-        return report if isinstance(report, dict) else {}
+        return {"total_docs_kept": len(df)}
     finally:
-        builder.close()
+        harvester.close()
 
 
 def _build_india_japan_corpus_from_dashboard(
@@ -156,24 +126,20 @@ def _build_india_japan_corpus_from_dashboard(
     end_year: int = 2026,
     max_docs: int = 600,
     max_urls_per_year: int = 80,
-    min_content_chars: int = 850,
+    min_content_chars: int = 500,
 ) -> Dict[str, object]:
-    from scrapers.official_corpus_builder import OfficialCorpusBuilder, CorpusBuildConfig
+    from scrapers.harvesting import UnifiedHarvester
 
-    builder = OfficialCorpusBuilder()
+    harvester = UnifiedHarvester()
     try:
-        cfg = CorpusBuildConfig(
-            start_year=int(start_year),
-            end_year=int(end_year),
-            max_docs_total=int(max_docs),
-            max_urls_per_year=int(max_urls_per_year),
-            min_content_chars=int(min_content_chars),
+        df = harvester.harvest_corpus(
+            ("india", "japan"),
+            max_docs_limit=int(max_docs),
+            min_chars_limit=int(min_content_chars),
         )
-        result = builder.build(cfg)
-        report = result.get("report", {}) if isinstance(result, dict) else {}
-        return report if isinstance(report, dict) else {}
+        return {"total_docs_kept": len(df)}
     finally:
-        builder.close()
+        harvester.close()
 
 
 def _in_streamlit_runtime() -> bool:
@@ -231,6 +197,14 @@ def preprocess_data(_df, pair_key: str = "", corpus_token: str = ""):
     logger.info("Preprocessing documents...")
     preprocessor = Preprocessor()
     processed_df = preprocessor.process_dataframe(_df, content_column='content')
+    if isinstance(processed_df, pd.DataFrame):
+        processed_df = processed_df.loc[:, ~processed_df.columns.duplicated()].copy()
+        if 'cleaned' in processed_df.columns:
+            processed_df['cleaned'] = processed_df['cleaned'].fillna('').astype(str)
+        if 'title' in processed_df.columns:
+            processed_df['title'] = processed_df['title'].fillna('Diplomatic Document').astype(str)
+        if 'doc_type' in processed_df.columns:
+            processed_df['doc_type'] = processed_df['doc_type'].fillna('Unknown').astype(str)
     return processed_df
 
 
@@ -248,6 +222,12 @@ def perform_strategic_analysis(_df):
         else:
             raise
     return report, scored_df, yearly_df
+
+
+@cache_data(show_spinner="Running binary validation baseline...")
+def perform_binary_validation(_scored_df):
+    """Cached supervised Economic-vs-Security validation baseline."""
+    return compare_binary_ml_with_lexicon(scored_df=_scored_df, text_col='cleaned')
 
 
 @cache_data(show_spinner="Analyzing tone & sentiment...")
@@ -288,11 +268,6 @@ def perform_issue_tagging(_df, pair_key: str = "", corpus_token: str = ""):
     return tagged, counts, trends, region_equity, group_equity
 
 
-@cache_data(show_spinner=False)
-def perform_quality_audit(_df):
-    return run_quarterly_quality_audit(_df)
-
-
 def build_analysis_bundle(_df: pd.DataFrame, external_ctx: Dict, include_tone_theme: bool = False) -> Dict:
     report, scored_df, yearly_df = perform_strategic_analysis(_df)
     stats_result = calculate_statistical_significance(
@@ -305,25 +280,14 @@ def build_analysis_bundle(_df: pd.DataFrame, external_ctx: Dict, include_tone_th
     contradiction_df = detect_contradictions(_df)
     source_cred_df, corpus_credibility_score = summarize_source_credibility(_df)
     weighted_focus = weighted_focus_metrics(scored_df)
-    trigger_rows = evaluate_policy_triggers(
-        processed_df=_df,
-        report=report,
-        stats_result=stats_result,
-        confidence_summary=confidence_summary,
-        contradiction_df=contradiction_df,
-        source_credibility_score=corpus_credibility_score,
-    )
-    trigger_df = triggers_to_dataframe(trigger_rows)
-    decision_rows = build_decision_options(
-        trigger_df=trigger_df,
-        confidence_summary=confidence_summary,
-        report=report,
-        weighted_focus=weighted_focus,
-        contradiction_df=contradiction_df,
-        scored_df=scored_df,
-    )
-    decision_options_df = decision_options_to_dataframe(decision_rows)
-    q_summary_df, q_issue_df, q_meta = perform_quality_audit(_df)
+    binary_validation = perform_binary_validation(scored_df)
+    trigger_rows = []
+    trigger_df = pd.DataFrame()
+    decision_rows = []
+    decision_options_df = pd.DataFrame()
+    q_summary_df = pd.DataFrame()
+    q_issue_df = pd.DataFrame()
+    q_meta = {}
 
     issue_counts_df = summarize_issue_counts(_df)
     issue_trends_df = summarize_issue_trends(_df)
@@ -346,6 +310,7 @@ def build_analysis_bundle(_df: pd.DataFrame, external_ctx: Dict, include_tone_th
         "source_cred_df": source_cred_df,
         "corpus_credibility_score": corpus_credibility_score,
         "weighted_focus": weighted_focus,
+        "binary_validation": binary_validation,
         "trigger_rows": trigger_rows,
         "trigger_df": trigger_df,
         "decision_rows": decision_rows,
@@ -423,237 +388,7 @@ def _pick_latest(project_root: Path, patterns: List[Tuple[str, str]]) -> Tuple[s
 
 @cache_data(show_spinner=False)
 def load_external_integrations(cache_token: str = "") -> Dict:
-    project_root = Path(__file__).resolve().parent.parent
-
-    source_patterns = {
-        "comtrade_yearly": [("data/processed", "comtrade_yearly_*.csv")],
-        "estat_rows": [("data/raw", "estat_rows_*.csv")],
-        "ogd_rows": [("data/raw", "data_gov_in_*.csv")],
-        "rss_year": [("data/raw", "rss_counts_by_year_*.csv")],
-        "external_signals": [("data/raw", "external_signals_*.csv")],
-    }
-    report_patterns = {
-        "rss_report": [("data/raw", "rss_report_*.json")],
-    }
-
-    loaded = {}
-    for key, patterns in source_patterns.items():
-        file_name, file_path = _pick_latest(project_root, patterns)
-        df = _safe_read_csv(file_path) if file_path else pd.DataFrame()
-        loaded[key] = {
-            "file_name": file_name,
-            "file_path": str(file_path) if file_path else "",
-            "rows": int(len(df)) if isinstance(df, pd.DataFrame) else 0,
-            "data": df,
-            "available": bool(file_path) and isinstance(df, pd.DataFrame) and len(df) > 0,
-        }
-
-    for key, patterns in report_patterns.items():
-        file_name, file_path = _pick_latest(project_root, patterns)
-        payload = _safe_read_json(file_path) if file_path else {}
-        loaded[key] = {
-            "file_name": file_name,
-            "file_path": str(file_path) if file_path else "",
-            "data": payload,
-            "available": bool(file_path) and isinstance(payload, dict) and len(payload) > 0,
-        }
-
-    return loaded
-
-
-def render_external_status_metrics(external_ctx: Dict):
-    labels = [
-        ("comtrade_yearly", "Comtrade"),
-        ("estat_rows", "e-Stat"),
-        ("ogd_rows", "OGD India"),
-        ("rss_year", "RSS"),
-        ("external_signals", "External Signals"),
-    ]
-    cols = st.columns(len(labels))
-    for idx, (key, label) in enumerate(labels):
-        info = external_ctx.get(key, {})
-        with cols[idx]:
-            st.metric(label, info.get("rows", 0))
-            if info.get("file_name"):
-                st.caption(info.get("file_name"))
-
-
-def build_live_geopolitical_pulse(external_ctx: Dict) -> Dict:
-    info = external_ctx.get("external_signals", {}) if isinstance(external_ctx, dict) else {}
-    if not info.get("available"):
-        return {
-            "available": False,
-            "count_24h": 0,
-            "count_7d": 0,
-            "providers": 0,
-            "confidence_score": 0.0,
-            "confidence_label": "Low",
-            "top_events": [],
-            "provider_counts": {},
-            "daily_counts_7d": [],
-            "recency_split": {"last_24h": 0, "prior_6d": 0},
-            "momentum_label": "Stable",
-        }
-
-    df = info.get("data", pd.DataFrame()).copy()
-    if not isinstance(df, pd.DataFrame) or len(df) == 0:
-        return {
-            "available": False,
-            "count_24h": 0,
-            "count_7d": 0,
-            "providers": 0,
-            "confidence_score": 0.0,
-            "confidence_label": "Low",
-            "top_events": [],
-            "provider_counts": {},
-            "daily_counts_7d": [],
-            "recency_split": {"last_24h": 0, "prior_6d": 0},
-            "momentum_label": "Stable",
-        }
-
-    if "published_at" in df.columns:
-        df["published_at"] = pd.to_datetime(df["published_at"], errors="coerce", utc=True)
-        df = df.dropna(subset=["published_at"]).copy()
-    else:
-        df["published_at"] = pd.NaT
-
-    now_utc = pd.Timestamp.now(tz="UTC")
-    window_24h = now_utc - pd.Timedelta(hours=24)
-    window_7d = now_utc - pd.Timedelta(days=7)
-
-    recent_24h = df[df["published_at"] >= window_24h].copy() if len(df) else pd.DataFrame()
-    recent_7d = df[df["published_at"] >= window_7d].copy() if len(df) else pd.DataFrame()
-
-    provider_counts = {}
-    providers_7d = 0
-    if "provider" in recent_7d.columns and len(recent_7d) > 0:
-        provider_counts = recent_7d["provider"].fillna("unknown").astype(str).value_counts().to_dict()
-        providers_7d = len(provider_counts)
-
-    source_diversity = 0
-    if "source_name" in recent_7d.columns and len(recent_7d) > 0:
-        source_diversity = int(recent_7d["source_name"].fillna("unknown").astype(str).nunique())
-
-    volume_score = min(40.0, (float(len(recent_7d)) / 40.0) * 40.0)
-    recency_score = 0.0
-    if len(recent_24h) > 0:
-        recency_score = 30.0
-    elif len(recent_7d) > 0:
-        recency_score = 15.0
-
-    provider_score = min(20.0, (float(providers_7d) / 4.0) * 20.0)
-    source_score = min(10.0, (float(source_diversity) / 10.0) * 10.0)
-    confidence_score = round(volume_score + recency_score + provider_score + source_score, 1)
-    if confidence_score >= 70:
-        confidence_label = "High"
-    elif confidence_score >= 40:
-        confidence_label = "Medium"
-    else:
-        confidence_label = "Low"
-
-    top_events = []
-    if len(recent_7d) > 0:
-        events_df = recent_7d.copy()
-        events_df["provider"] = events_df.get("provider", pd.Series(["unknown"] * len(events_df))).fillna("unknown").astype(str).str.strip()
-        events_df["source_name"] = events_df.get("source_name", pd.Series([""] * len(events_df))).fillna("").astype(str).str.strip()
-        events_df["title"] = events_df.get("title", pd.Series([""] * len(events_df))).fillna("").astype(str).str.strip()
-        events_df["url"] = events_df.get("url", pd.Series([""] * len(events_df))).fillna("").astype(str).str.strip()
-        events_df = events_df[events_df["title"].str.len() > 0].copy()
-
-        if len(events_df) > 0:
-            events_df["title_norm"] = (
-                events_df["title"]
-                .str.lower()
-                .str.replace(r"\s+", " ", regex=True)
-                .str.replace(r"[^a-z0-9 ]", "", regex=True)
-                .str.strip()
-            )
-            events_df["url_norm"] = events_df["url"].str.lower().str.strip()
-            events_df["event_key"] = events_df.apply(
-                lambda r: r["title_norm"] if r["title_norm"] else r["url_norm"],
-                axis=1,
-            )
-            events_df = events_df.sort_values("published_at", ascending=False)
-            events_df = events_df.drop_duplicates(subset=["event_key"], keep="first")
-
-            max_events = 8
-            chosen = []
-            used_keys = set()
-            providers = [p for p in events_df["provider"].dropna().unique().tolist() if str(p).strip()]
-
-            for provider in providers:
-                cand = events_df[events_df["provider"] == provider].head(1)
-                if len(cand) > 0:
-                    row = cand.iloc[0]
-                    key = str(row.get("event_key", "")).strip()
-                    if key and key not in used_keys:
-                        chosen.append(row)
-                        used_keys.add(key)
-                    if len(chosen) >= max_events:
-                        break
-
-            if len(chosen) < max_events:
-                for _, row in events_df.iterrows():
-                    key = str(row.get("event_key", "")).strip()
-                    if not key or key in used_keys:
-                        continue
-                    chosen.append(row)
-                    used_keys.add(key)
-                    if len(chosen) >= max_events:
-                        break
-
-            for row in chosen:
-                top_events.append(
-                    {
-                        "published_at": str(row.get("published_at", "")),
-                        "provider": str(row.get("provider", "")),
-                        "source_name": str(row.get("source_name", "")),
-                        "title": str(row.get("title", "")),
-                        "url": str(row.get("url", "")),
-                    }
-                )
-
-    daily_counts_7d = []
-    if len(recent_7d) > 0:
-        tmp = recent_7d.copy()
-        tmp["date"] = tmp["published_at"].dt.date
-        grouped = tmp.groupby("date").size().to_dict()
-        start_day = window_7d.date()
-        end_day = now_utc.date()
-        for day in pd.date_range(start=start_day, end=end_day, freq="D"):
-            key = day.date()
-            daily_counts_7d.append({
-                "date": str(key),
-                "count": int(grouped.get(key, 0)),
-            })
-
-    prior_6d = max(int(len(recent_7d)) - int(len(recent_24h)), 0)
-    recency_split = {
-        "last_24h": int(len(recent_24h)),
-        "prior_6d": int(prior_6d),
-    }
-    momentum_ratio = float(len(recent_24h)) / float(len(recent_7d)) if len(recent_7d) > 0 else 0.0
-    if momentum_ratio >= 0.4:
-        momentum_label = "Accelerating"
-    elif momentum_ratio <= 0.1:
-        momentum_label = "Cooling"
-    else:
-        momentum_label = "Stable"
-
-    return {
-        "available": True,
-        "count_24h": int(len(recent_24h)),
-        "count_7d": int(len(recent_7d)),
-        "providers": int(providers_7d),
-        "confidence_score": float(confidence_score),
-        "confidence_label": confidence_label,
-        "top_events": top_events,
-        "provider_counts": provider_counts,
-        "daily_counts_7d": daily_counts_7d,
-        "recency_split": recency_split,
-        "momentum_label": momentum_label,
-    }
-
+    return {}
 
 def calculate_statistical_significance(series1: pd.Series, series2: pd.Series) -> Dict:
     """Calculate paired statistical significance between two aligned series."""
@@ -1075,16 +810,6 @@ def build_overview_verdicts(
     else:
         stat_text = "Statistical test unavailable due to insufficient paired data."
     verdicts.append({"area": "7) Statistical Checks", "verdict": stat_text})
-
-    integrations_loaded = 0
-    for key in ["comtrade_yearly", "estat_rows", "ogd_rows", "rss_year", "external_signals"]:
-        if external_ctx.get(key, {}).get("available"):
-            integrations_loaded += 1
-    verdicts.append({
-        "area": "8) Integration Signals",
-        "verdict": f"{integrations_loaded}/5 external integration feeds are currently loaded.",
-    })
-
     contradiction_count = int(len(contradiction_df)) if isinstance(contradiction_df, pd.DataFrame) else 0
     verdicts.append({
         "area": "Cross-Source Contradictions",
@@ -1293,125 +1018,6 @@ def render_data_basis_caption(run_meta: Dict[str, str], chart_label: str, point_
         f"Data basis ({chart_label}) — docs={run_meta.get('active_docs', 'n/a')}, years={run_meta.get('years', 'n/a')}, "
         f"span={run_meta.get('date_span', 'n/a')}, filters={run_meta.get('filters', 'n/a')}{suffix}."
     )
-
-
-def build_pdf_analysis_payload(
-    processed_df: pd.DataFrame,
-    bundle: Dict,
-    external_ctx: Dict,
-    role_profile: str,
-) -> Dict:
-    report = bundle.get("report", {})
-    yearly_df = bundle.get("yearly_df", pd.DataFrame())
-    stats_result = bundle.get("stats_result", {})
-    confidence_summary = bundle.get("confidence_summary", {})
-    trigger_rows = bundle.get("trigger_rows", [])
-    decision_rows = bundle.get("decision_rows", [])
-    q_summary_df = bundle.get("q_summary_df", pd.DataFrame())
-    quality_meta = bundle.get("q_meta", {})
-    thematic_pdf_analysis = bundle.get("thematic_analysis", {})
-    issue_counts_pdf = bundle.get("issue_counts_df", pd.DataFrame())
-    issue_trends_pdf = bundle.get("issue_trends_df", pd.DataFrame())
-    tone_pdf_df = bundle.get("tone_df", pd.DataFrame())
-
-    tone_distribution = {}
-    if isinstance(tone_pdf_df, pd.DataFrame) and "tone_class" in tone_pdf_df.columns:
-        tone_distribution = tone_pdf_df["tone_class"].fillna("Unknown").astype(str).value_counts().to_dict()
-
-    sentiment_distribution = {}
-    if isinstance(tone_pdf_df, pd.DataFrame) and "sentiment_class" in tone_pdf_df.columns:
-        sentiment_distribution = tone_pdf_df["sentiment_class"].fillna("Unknown").astype(str).value_counts().to_dict()
-
-    yearly_shift_records = []
-    if isinstance(yearly_df, pd.DataFrame) and len(yearly_df) > 0:
-        cols = [c for c in ["year", "economic_score_mean", "security_score_mean"] if c in yearly_df.columns]
-        if cols:
-            yearly_shift_records = yearly_df[cols].to_dict(orient="records")
-
-    quality_quarterly_records = []
-    if isinstance(q_summary_df, pd.DataFrame) and len(q_summary_df) > 0:
-        qcols = [c for c in ["quarter", "documents", "missing_url_pct"] if c in q_summary_df.columns]
-        if qcols:
-            quality_quarterly_records = q_summary_df[qcols].to_dict(orient="records")
-
-    issue_tag_records = []
-    if isinstance(issue_counts_pdf, pd.DataFrame) and len(issue_counts_pdf) > 0:
-        icols = [c for c in ["issue", "documents"] if c in issue_counts_pdf.columns]
-        if icols:
-            issue_tag_records = issue_counts_pdf[icols].head(12).to_dict(orient="records")
-
-    issue_trend_records = []
-    if isinstance(issue_trends_pdf, pd.DataFrame) and len(issue_trends_pdf) > 0:
-        itcols = [c for c in ["year", "issue", "documents"] if c in issue_trends_pdf.columns]
-        if len(itcols) == 3:
-            issue_trend_records = issue_trends_pdf[itcols].to_dict(orient="records")
-
-    theme_evolution_records = []
-    if isinstance(thematic_pdf_analysis, dict):
-        dist = thematic_pdf_analysis.get("topic_weights_by_year") or thematic_pdf_analysis.get("topic_distribution_by_year") or {}
-        if isinstance(dist, dict):
-            for year, topic_list in dist.items():
-                if isinstance(topic_list, list):
-                    for item in topic_list[:5]:
-                        try:
-                            topic_id, prob = item
-                            theme_evolution_records.append({
-                                "year": int(year),
-                                "theme": f"Theme {topic_id}",
-                                "weight": float(prob),
-                            })
-                        except Exception:
-                            continue
-
-    live_pulse = build_live_geopolitical_pulse(external_ctx)
-
-    safe_start = str(pd.to_datetime(processed_df.get("date", pd.Series(dtype=str)), errors="coerce").min())
-    safe_end = str(pd.to_datetime(processed_df.get("date", pd.Series(dtype=str)), errors="coerce").max())
-
-    return {
-        "metadata": {
-            "total_documents": len(processed_df),
-            "date_range": {"start": safe_start, "end": safe_end},
-            "audience_profile": role_profile,
-        },
-        "strategic_shift": {
-            "total_documents": len(processed_df),
-            "date_range": [safe_start, safe_end],
-            "overall_economic_avg": float(report.get("overall_economic_avg", 0.0)),
-            "overall_security_avg": float(report.get("overall_security_avg", 0.0)),
-            "economic_focus_avg": float(report.get("overall_economic_avg", 0.0)),
-            "security_focus_avg": float(report.get("overall_security_avg", 0.0)),
-            "crossover_year": report.get("crossover_year"),
-            "trend": report.get("trend", "Unknown"),
-            "statistical_significance": stats_result or report.get("statistical_significance", {}),
-            "trend_analysis": report.get("trend_analysis", {}),
-        },
-        "confidence_summary": confidence_summary,
-        "policy_triggers": trigger_rows,
-        "decision_options": decision_rows,
-        "quality_audit": quality_meta,
-        "thematic_analysis": {
-            "num_topics": int((thematic_pdf_analysis or {}).get("n_topics", 0)) if isinstance(thematic_pdf_analysis, dict) else 0,
-            "themes": list((thematic_pdf_analysis or {}).get("overall_themes", {}).keys())[:8] if isinstance(thematic_pdf_analysis, dict) else [],
-        },
-        "live_pulse": live_pulse,
-        "visual_data": {
-            "yearly_shift": yearly_shift_records,
-            "tone_distribution": tone_distribution,
-            "sentiment_distribution": sentiment_distribution,
-            "quality_quarterly": quality_quarterly_records,
-            "issue_tag_counts": issue_tag_records,
-            "issue_tag_trends": issue_trend_records,
-            "theme_evolution": theme_evolution_records,
-            "pulse_windows": {
-                "last_24h": live_pulse.get("count_24h", 0),
-                "last_7d": live_pulse.get("count_7d", 0),
-            },
-            "pulse_provider_counts": live_pulse.get("provider_counts", {}),
-            "pulse_daily_counts": live_pulse.get("daily_counts_7d", []),
-            "pulse_recency_split": live_pulse.get("recency_split", {}),
-        },
-    }
 
 
 def compute_chart_adequacy(
@@ -1676,6 +1282,8 @@ def main():
     }
     
     # Get current language translations
+
+    # Get current language translations
     lang = translations[language]
     
     # Sidebar navigation
@@ -1718,13 +1326,9 @@ def main():
     
     st.sidebar.info(f"{country1_flag} {country1_name} ({country1_ministry}) ↔ {country2_flag} {country2_name} ({country2_ministry})")
 
-    role_profile = st.sidebar.selectbox(
-        "Audience profile",
-        ["Think Tank", "NGO", "Diplomat", "Policy"],
-        index=3,
-    )
+    role_profile = "Think Tank"
     role_preset = get_role_presets(role_profile)
-    st.sidebar.caption(role_preset.get("description", ""))
+    st.sidebar.caption("Research Mode: Academic rigor, statistical confidence, and provenance-first analysis.")
     
     st.sidebar.markdown("---")
     
@@ -1813,9 +1417,10 @@ def main():
 
     # Optional stratification: document type (heuristic, from loader)
     if "doc_type" in processed_df.columns:
-        doc_type_options = sorted(
-            [str(x) for x in processed_df["doc_type"].fillna("Unknown").astype(str).unique()]
-        )
+        processed_df["doc_type"] = processed_df["doc_type"].fillna("Unknown").astype(str)
+        doc_type_options = sorted([str(x) for x in processed_df["doc_type"].unique() if str(x).strip()])
+        if not doc_type_options:
+            doc_type_options = ["Unknown"]
         before_count = int(len(processed_df))
         selected_doc_types = st.sidebar.multiselect(
             "Document type",
@@ -1823,8 +1428,11 @@ def main():
             default=doc_type_options,
             key="doc_type_filter",
         )
-        if selected_doc_types:
+        if 0 < len(selected_doc_types) < len(doc_type_options):
             processed_df = processed_df[processed_df["doc_type"].isin(selected_doc_types)].copy()
+        elif len(selected_doc_types) == 0:
+            processed_df = processed_df.iloc[0:0].copy()
+
         filter_steps.append(
             {
                 "step": "Document type",
@@ -1842,9 +1450,7 @@ def main():
             for tag in tags
         })
         if all_issue_tags:
-            default_issue_tags = [tag for tag in role_preset.get("focus_issues", []) if tag in all_issue_tags]
-            if not default_issue_tags:
-                default_issue_tags = all_issue_tags
+            default_issue_tags = all_issue_tags
             before_count = int(len(processed_df))
             selected_issue_tags = st.sidebar.multiselect(
                 "Issue tags",
@@ -1854,11 +1460,27 @@ def main():
             )
             apply_issue_filter = 0 < len(selected_issue_tags) < len(all_issue_tags)
             if apply_issue_filter:
-                processed_df = processed_df[
-                    processed_df["issue_tags"].map(
-                        lambda tags: isinstance(tags, list) and any(tag in selected_issue_tags for tag in tags)
-                    )
-                ].copy()
+                include_unclassified = st.sidebar.checkbox(
+                    "Include documents without tags",
+                    value=True,
+                    key="include_unclassified_issues",
+                    help="Keep general bilateral communiqués that don't match specific keyword tags",
+                )
+                if include_unclassified:
+                    processed_df = processed_df[
+                        processed_df["issue_tags"].map(
+                            lambda tags: (not isinstance(tags, list) or len(tags) == 0) or any(tag in selected_issue_tags for tag in tags)
+                        )
+                    ].copy()
+                else:
+                    processed_df = processed_df[
+                        processed_df["issue_tags"].map(
+                            lambda tags: isinstance(tags, list) and any(tag in selected_issue_tags for tag in tags)
+                        )
+                    ].copy()
+            elif len(selected_issue_tags) == 0:
+                processed_df = processed_df.iloc[0:0].copy()
+
             filter_steps.append(
                 {
                     "step": "Issue tags",
@@ -1885,11 +1507,27 @@ def main():
             )
             apply_region_filter = 0 < len(selected_regions) < len(all_regions)
             if apply_region_filter:
-                processed_df = processed_df[
-                    processed_df["equity_regions"].map(
-                        lambda tags: isinstance(tags, list) and any(tag in selected_regions for tag in tags)
-                    )
-                ].copy()
+                include_unclassified_reg = st.sidebar.checkbox(
+                    "Include documents without regional tag",
+                    value=True,
+                    key="include_unclassified_reg",
+                    help="Keep bilateral documents that apply to entire nation rather than specific sub-regions",
+                )
+                if include_unclassified_reg:
+                    processed_df = processed_df[
+                        processed_df["equity_regions"].map(
+                            lambda tags: (not isinstance(tags, list) or len(tags) == 0) or any(tag in selected_regions for tag in tags)
+                        )
+                    ].copy()
+                else:
+                    processed_df = processed_df[
+                        processed_df["equity_regions"].map(
+                            lambda tags: isinstance(tags, list) and any(tag in selected_regions for tag in tags)
+                        )
+                    ].copy()
+            elif len(selected_regions) == 0:
+                processed_df = processed_df.iloc[0:0].copy()
+
             filter_steps.append(
                 {
                     "step": "Equity regions",
@@ -1916,11 +1554,27 @@ def main():
             )
             apply_group_filter = 0 < len(selected_groups) < len(all_groups)
             if apply_group_filter:
-                processed_df = processed_df[
-                    processed_df["equity_groups"].map(
-                        lambda tags: isinstance(tags, list) and any(tag in selected_groups for tag in tags)
-                    )
-                ].copy()
+                include_unclassified_grp = st.sidebar.checkbox(
+                    "Include documents without community tag",
+                    value=True,
+                    key="include_unclassified_grp",
+                    help="Keep bilateral documents that apply generally rather than to specific community sub-groups",
+                )
+                if include_unclassified_grp:
+                    processed_df = processed_df[
+                        processed_df["equity_groups"].map(
+                            lambda tags: (not isinstance(tags, list) or len(tags) == 0) or any(tag in selected_groups for tag in tags)
+                        )
+                    ].copy()
+                else:
+                    processed_df = processed_df[
+                        processed_df["equity_groups"].map(
+                            lambda tags: isinstance(tags, list) and any(tag in selected_groups for tag in tags)
+                        )
+                    ].copy()
+            elif len(selected_groups) == 0:
+                processed_df = processed_df.iloc[0:0].copy()
+
             filter_steps.append(
                 {
                     "step": "Equity communities",
@@ -1989,84 +1643,16 @@ def main():
     
     st.sidebar.markdown("---")
     
-    # PDF Export button in sidebar
-    if REPORTLAB_AVAILABLE:
-        st.sidebar.subheader("Export Report")
-        pdf_scope = st.sidebar.selectbox(
-            "PDF scope",
-            ["Active filtered view", "Full corpus (ignore sidebar filters)"],
-            index=1,
-            key="pdf_scope_selector",
-        )
-
-        if pdf_scope == "Full corpus (ignore sidebar filters)":
-            current_pdf_signature = ("full", pair_str, _corpus_cache_token(selected_pair))
-            st.sidebar.caption("PDF snapshot uses full corpus (pre-filter view).")
-        else:
-            current_pdf_signature = ("filtered", filter_signature)
-            st.sidebar.caption(f"PDF snapshot uses active filtered view ({active_doc_count} docs).")
-
-        if st.sidebar.button("Generate PDF Report", type="primary"):
-            with st.spinner("Generating PDF report..."):
-                try:
-                    if pdf_scope == "Full corpus (ignore sidebar filters)":
-                        pdf_df = baseline_processed_df.copy() if isinstance(baseline_processed_df, pd.DataFrame) else processed_df.copy()
-                        pdf_bundle = build_analysis_bundle(pdf_df, external_ctx, include_tone_theme=True)
-                    else:
-                        pdf_df = processed_df.copy()
-                        pdf_bundle = get_analysis_bundle(include_tone_theme=True)
-
-                    analysis_data = build_pdf_analysis_payload(
-                        processed_df=pdf_df,
-                        bundle=pdf_bundle,
-                        external_ctx=external_ctx,
-                        role_profile=role_profile,
-                    )
-                    
-                    pdf_gen = PDFReportGenerator()
-                    tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
-                    success = pdf_gen.generate_report(analysis_data, output_file=tmp_file.name)
-                    
-                    if success:
-                        with open(tmp_file.name, 'rb') as f:
-                            pdf_bytes = f.read()
-                        st.session_state["pdf_report_bytes"] = pdf_bytes
-                        st.session_state["pdf_report_signature"] = current_pdf_signature
-                        st.session_state["pdf_report_filename"] = "diplomatic_barometer_report.pdf"
-                        st.sidebar.success("PDF generated. Click Save PDF below.")
-                        try:
-                            os.remove(tmp_file.name)
-                        except Exception:
-                            pass
-                    else:
-                        st.sidebar.error("PDF generation failed")
-                except Exception as e:
-                    st.sidebar.error(f"Error: {str(e)}")
-
-        cached_pdf_bytes = st.session_state.get("pdf_report_bytes")
-        cached_pdf_signature = st.session_state.get("pdf_report_signature")
-        cached_filename = st.session_state.get("pdf_report_filename", "diplomatic_barometer_report.pdf")
-
-        if cached_pdf_bytes and cached_pdf_signature == current_pdf_signature:
-            st.sidebar.download_button(
-                label="Save PDF",
-                data=cached_pdf_bytes,
-                file_name=cached_filename,
-                mime="application/pdf"
-            )
-        elif cached_pdf_bytes and cached_pdf_signature != current_pdf_signature:
-            st.sidebar.info("PDF snapshot is out of date for current scope/filters. Click Generate PDF Report.")
-    
     st.sidebar.markdown("---")
 
     page_options = [
         lang["executive_summary"],
         lang["strategic_shift"],
-        lang["tone_sentiment"],
         lang["thematic"],
-        lang["time_machine"],
-        lang["search_explore"],
         lang["statistical_tests"],
+        lang["search_explore"],
+        lang["time_machine"],
+        lang["tone_sentiment"],
     ]
     preferred_pages = role_preset.get("preferred_pages", ["Overview"])
     default_page_label = preferred_pages[0] if preferred_pages else "Overview"
@@ -2115,14 +1701,9 @@ def main():
                 "summarize_issue_counts": summarize_issue_counts,
                 "summarize_issue_trends": summarize_issue_trends,
                 "summarize_equity_dimensions": summarize_equity_dimensions,
-                "render_external_status_metrics": render_external_status_metrics,
-                "build_live_geopolitical_pulse": build_live_geopolitical_pulse,
                 "render_data_basis_caption": render_data_basis_caption,
                 "build_claim_traceability": build_claim_traceability,
-                "triggers_to_dataframe": triggers_to_dataframe,
                 "build_overview_verdicts": build_overview_verdicts,
-                "perform_quality_audit": perform_quality_audit,
-                "build_pilot_pack": build_pilot_pack,
                 "render_page_exports": render_page_exports,
             }
         )
@@ -2173,12 +1754,12 @@ def main():
         
         # Display yearly statistics
         st.subheader("Yearly Statistics")
-        st.dataframe(yearly_df.style.format({
-            'economic_score_mean': '{:.4f}',
-            'security_score_mean': '{:.4f}',
-            'economic_score_std': '{:.4f}',
-            'security_score_std': '{:.4f}'
-        }), width='stretch')
+        format_dict = {
+            col: '{:.4f}'
+            for col in ['economic_score_mean', 'security_score_mean', 'economic_score_std', 'security_score_std']
+            if col in yearly_df.columns
+        }
+        st.dataframe(yearly_df.style.format(format_dict, na_rep='-'), width='stretch')
 
         st.markdown("#### Signal")
         fig_yearly = go.Figure()
@@ -2221,49 +1802,31 @@ def main():
 
         st.caption("These scores are lexicon-based signals; validate interpretation using the evidence rows below.")
 
-        st.subheader("Structured context (official datasets)")
-        comtrade_info = external_ctx.get("comtrade_yearly", {})
-        estat_info = external_ctx.get("estat_rows", {})
+        st.subheader("Binary ML validation baseline")
+        binary_validation = perform_binary_validation(scored_df)
+        if binary_validation.get("available"):
+            doc_cmp = binary_validation.get("document_comparison", {})
+            c1, c2, c3, c4 = st.columns(4)
+            with c1:
+                st.metric("CV macro F1", binary_validation.get("macro_f1", "n/a"))
+            with c2:
+                st.metric("CV accuracy", binary_validation.get("accuracy", "n/a"))
+            with c3:
+                st.metric("Lexicon agreement", doc_cmp.get("agreement_rate", "n/a"))
+            with c4:
+                st.metric("Disagreements", doc_cmp.get("disagreement_count", "n/a"))
 
-        if comtrade_info.get("available"):
-            comtrade_df = comtrade_info.get("data", pd.DataFrame()).copy()
-            if {"refYear", "primaryValue_sum"}.issubset(set(comtrade_df.columns)):
-                comtrade_df["refYear"] = pd.to_numeric(comtrade_df["refYear"], errors="coerce")
-                comtrade_df["primaryValue_sum"] = pd.to_numeric(comtrade_df["primaryValue_sum"], errors="coerce")
-                comtrade_df = comtrade_df.dropna(subset=["refYear", "primaryValue_sum"]).sort_values("refYear")
-                if len(comtrade_df) > 0:
-                    fig_trade = px.line(
-                        comtrade_df,
-                        x="refYear",
-                        y="primaryValue_sum",
-                        markers=True,
-                        title="Comtrade Total Flow by Year",
-                    )
-                    st.plotly_chart(fig_trade, width='stretch')
-                    render_data_basis_caption(run_meta, "Comtrade flow by year", point_count=len(comtrade_df))
-            st.caption(f"Comtrade source: {comtrade_info.get('file_name', '')}")
-        else:
-            st.info("Comtrade yearly output not found. Run `python run.py --fetch-comtrade` to refresh.")
+            st.caption(
+                "Validation only: this TF-IDF + logistic regression model checks whether a simple supervised "
+                "Economic-vs-Security classifier broadly agrees with the lexicon signal. It is not the primary model."
+            )
 
-        if estat_info.get("available"):
-            estat_df = estat_info.get("data", pd.DataFrame()).copy()
-            if "time" in estat_df.columns:
-                estat_df["year"] = estat_df["time"].astype(str).str[:4]
-                estat_year_counts = estat_df.groupby("year").size().reset_index(name="rows")
-                estat_year_counts["year"] = pd.to_numeric(estat_year_counts["year"], errors="coerce")
-                estat_year_counts = estat_year_counts.dropna(subset=["year"]).sort_values("year")
-                if len(estat_year_counts) > 0:
-                    fig_estat = px.bar(
-                        estat_year_counts,
-                        x="year",
-                        y="rows",
-                        title="e-Stat Rows by Year",
-                    )
-                    st.plotly_chart(fig_estat, width='stretch')
-                    render_data_basis_caption(run_meta, "e-Stat by year", point_count=len(estat_year_counts))
-            st.caption(f"e-Stat source: {estat_info.get('file_name', '')}")
+            examples = doc_cmp.get("disagreement_examples", [])
+            if examples:
+                with st.expander("Review ML-vs-lexicon disagreement examples"):
+                    st.dataframe(pd.DataFrame(examples), width='stretch', hide_index=True)
         else:
-            st.info("e-Stat output not found. Run `python run.py --fetch-estat` to refresh.")
+            st.info(f"Binary validation unavailable: {binary_validation.get('warning', 'not enough labeled data')}")
         
         # Distribution comparison
         col1, col2 = st.columns(2)
@@ -2309,7 +1872,8 @@ def main():
             )
             st.plotly_chart(fig, width='stretch')
             render_data_basis_caption(run_meta, "Top economic documents", point_count=len(eco_terms))
-            st.dataframe(eco_terms[['date', 'title', 'source', 'source_share_pct', 'source_balance_warning', 'economic_score']], width='stretch', hide_index=True)
+            eco_display_cols = [c for c in ['date', 'title', 'source', 'source_share_pct', 'source_balance_warning', 'economic_score'] if c in eco_terms.columns]
+            st.dataframe(eco_terms[eco_display_cols], width='stretch', hide_index=True)
         
         # Top security terms
         st.subheader("Top Security Sector Terms")
@@ -2332,7 +1896,8 @@ def main():
             )
             st.plotly_chart(fig, width='stretch')
             render_data_basis_caption(run_meta, "Top security documents", point_count=len(sec_terms))
-            st.dataframe(sec_terms[['date', 'title', 'source', 'source_share_pct', 'source_balance_warning', 'security_score']], width='stretch', hide_index=True)
+            sec_display_cols = [c for c in ['date', 'title', 'source', 'source_share_pct', 'source_balance_warning', 'security_score'] if c in sec_terms.columns]
+            st.dataframe(sec_terms[sec_display_cols], width='stretch', hide_index=True)
 
         st.subheader("Cross-source contradiction scan")
         contradiction_df = detect_contradictions(processed_df)
@@ -2653,81 +2218,6 @@ def main():
                 else:
                     st.dataframe(sentiment_year, width='stretch', hide_index=True)
 
-        st.subheader("External signals context")
-        external_info = external_ctx.get("external_signals", {})
-        if external_info.get("available"):
-            signal_df = external_info.get("data", pd.DataFrame()).copy()
-            if "provider" in signal_df.columns:
-                provider_counts = signal_df["provider"].fillna("unknown").astype(str).value_counts().reset_index()
-                provider_counts.columns = ["provider", "count"]
-                st.dataframe(provider_counts, width='stretch', hide_index=True)
-
-            if "published_at" in signal_df.columns:
-                signal_df["published_at"] = (
-                    pd.to_datetime(signal_df["published_at"], errors="coerce", utc=True)
-                    .dt.tz_convert(None)
-                )
-                signal_df = signal_df.dropna(subset=["published_at"])
-                if len(signal_df) > 0:
-                    signal_df["year"] = signal_df["published_at"].dt.year
-                    yearly_counts = signal_df.groupby("year").size().reset_index(name="count")
-                    fig_signal_year = px.line(yearly_counts, x="year", y="count", markers=True, title="External Signals by Year")
-                    yearly_counts["year"] = pd.to_numeric(yearly_counts["year"], errors="coerce")
-                    yearly_counts = yearly_counts.dropna(subset=["year", "count"]).sort_values("year")
-                    yearly_counts["year_label"] = yearly_counts["year"].astype(int).astype(str)
-
-                    if len(yearly_counts) >= 2:
-                        st.dataframe(yearly_counts[["year_label", "count"]], width='stretch', hide_index=True)
-                    elif len(yearly_counts) == 1:
-                        st.dataframe(yearly_counts[["year_label", "count"]], width='stretch', hide_index=True)
-                        st.caption("Only one year is available in the current external-signals file; trend interpretation is limited.")
-
-                        signal_df["month"] = signal_df["published_at"].dt.strftime("%Y-%m")
-                        monthly_counts = signal_df.groupby("month").size().reset_index(name="count").sort_values("month")
-                        if len(monthly_counts) >= 2:
-                            st.dataframe(monthly_counts, width='stretch', hide_index=True)
-
-            st.caption(f"External signals source: {external_info.get('file_name', '')}")
-        else:
-            st.info("External signals file not found. Run `python run.py --fetch-news` to refresh.")
-
-        # Evidence: most urgent documents
-        if 'urgency_score' in tone_df.columns:
-            st.subheader("Evidence (most urgent documents)")
-            tmp = tone_df.copy()
-            tmp['urgency_score'] = pd.to_numeric(tmp['urgency_score'], errors='coerce').fillna(0.0)
-            cols = [c for c in ['date', 'year', 'title', 'source', 'url', 'tone_class', 'urgency_score', 'sentiment_polarity'] if c in tmp.columns]
-            top_urgent = tmp.sort_values('urgency_score', ascending=False).head(10)[cols]
-            st.dataframe(top_urgent, width='stretch')
-
-        st.subheader("Evidence excerpts by tone class")
-        if {'tone_class', 'title', 'cleaned'}.issubset(set(tone_df.columns)):
-            excerpt_rows = []
-            for tone_class, grp in tone_df.groupby('tone_class'):
-                for _, row in grp.head(2).iterrows():
-                    excerpt_rows.append({
-                        'tone_class': str(tone_class),
-                        'title': str(row.get('title', '')),
-                        'source': str(row.get('source', '')),
-                        'excerpt': str(row.get('cleaned', ''))[:260] + ('...' if len(str(row.get('cleaned', ''))) > 260 else ''),
-                    })
-            if excerpt_rows:
-                st.dataframe(pd.DataFrame(excerpt_rows), width='stretch', hide_index=True)
-            else:
-                st.info('No tone excerpts available.')
-        
-        # Statistics
-        st.subheader("Tone Statistics")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.metric("Avg Urgency", f"{yearly_tone['urgency_score_mean'].mean():.3f}")
-        with col2:
-            st.metric("Avg Polarity", f"{yearly_tone['sentiment_polarity_mean'].mean():.3f}")
-        with col3:
-            most_tone = tone_df['tone_class'].mode()[0] if len(tone_df) > 0 and 'tone_class' in tone_df.columns else "Formal"
-            st.metric("Most Common Tone", most_tone)
-        
         st.info("""
         **How to read this page:**
         
@@ -2925,33 +2415,6 @@ def main():
         else:
             st.info("Fallback: Theme evolution visual unavailable because no valid yearly theme points were produced.")
 
-        st.subheader("External context snapshots")
-        ogd_info = external_ctx.get("ogd_rows", {})
-        rss_info = external_ctx.get("rss_year", {})
-
-        col1, col2 = st.columns(2)
-        with col1:
-            if ogd_info.get("available"):
-                ogd_df = ogd_info.get("data", pd.DataFrame()).copy()
-                st.metric("OGD India rows", len(ogd_df))
-                st.caption(f"Source: {ogd_info.get('file_name', '')}")
-                st.dataframe(ogd_df.head(5), width='stretch', hide_index=True)
-            else:
-                st.info("OGD output not found.")
-
-        with col2:
-            if rss_info.get("available"):
-                rss_df = rss_info.get("data", pd.DataFrame()).copy()
-                if {"year", "items"}.issubset(set(rss_df.columns)):
-                    rss_df["year"] = pd.to_numeric(rss_df["year"], errors="coerce")
-                    rss_df["items"] = pd.to_numeric(rss_df["items"], errors="coerce")
-                    rss_df = rss_df.dropna(subset=["year", "items"]).sort_values("year")
-                    if len(rss_df) > 0:
-                        st.dataframe(rss_df[["year", "items"]], width='stretch', hide_index=True)
-                st.caption(f"Source: {rss_info.get('file_name', '')}")
-            else:
-                st.info("RSS summary output not found.")
-        
         # Show themes explanation
         st.info("""
         **How to read this page:**
@@ -2971,9 +2434,8 @@ def main():
             run_meta=run_meta,
         )
 
-    
     # =====================================================================
-    # PAGE 5: INTERACTIVE TIME MACHINE
+    # PAGE 5: YEAR EXPLORER
     # =====================================================================
     elif page == lang["time_machine"]:
         st.header(f"Year-by-Year Explorer")
@@ -2995,38 +2457,40 @@ def main():
             },
         )
         
-        years = sorted(processed_df['year'].unique())
-        selected_year = st.slider(
-            "Select a Year",
-            min_value=int(min(years)),
-            max_value=int(max(years)),
-            value=int(years[len(years)//2])
-        )
+        valid_years = sorted([int(y) for y in processed_df['year'].dropna().unique() if pd.notna(y)])
+        if not valid_years:
+            st.warning("No valid years available in the current document set.")
+            return
+
+        if len(valid_years) == 1:
+            selected_year = valid_years[0]
+            st.info(f"Only one year available: {selected_year}")
+        else:
+            selected_year = st.slider(
+                "Select a Year",
+                min_value=int(min(valid_years)),
+                max_value=int(max(valid_years)),
+                value=int(valid_years[len(valid_years)//2])
+            )
 
         compare_mode = st.checkbox("Enable year-vs-year compare mode", value=False)
         compare_year = None
         if compare_mode:
-            compare_year = st.selectbox(
-                "Compare with year",
-                [int(y) for y in years if int(y) != int(selected_year)],
-                index=0,
-            )
+            compare_options = [int(y) for y in valid_years if int(y) != int(selected_year)]
+            if compare_options:
+                compare_year = st.selectbox(
+                    "Compare with year",
+                    compare_options,
+                    index=0,
+                )
+            else:
+                st.caption("No alternate year available for comparison.")
         
         # Get documents from selected year
         year_data = processed_df[processed_df['year'] == selected_year]
         
         st.subheader(f"Year {selected_year}")
         st.info(f"{len(year_data)} documents from this year")
-
-        rss_info = external_ctx.get("rss_year", {})
-        if rss_info.get("available"):
-            rss_df = rss_info.get("data", pd.DataFrame()).copy()
-            if {"year", "items"}.issubset(set(rss_df.columns)):
-                rss_df["year"] = pd.to_numeric(rss_df["year"], errors="coerce")
-                rss_df["items"] = pd.to_numeric(rss_df["items"], errors="coerce")
-                year_match = rss_df[rss_df["year"] == float(selected_year)]
-                if len(year_match) > 0:
-                    st.caption(f"RSS items in {selected_year}: {int(year_match['items'].iloc[0])}")
         
         if len(year_data) > 0:
             # Summarize top terms for the selected year
@@ -3087,10 +2551,13 @@ def main():
             # Show key documents from this year
             st.subheader("Documents from This Year")
             for idx, row in year_data.iterrows():
-                with st.expander(f"{row['title'][:60]}..."):
-                    st.write(f"**Date:** {row['date']}")
-                    st.write(f"**Location:** {row['location']}")
-                    st.write(f"**Content:** {row['cleaned'][:300]}...")
+                title_text = str(row.get('title', 'Document') or 'Document')
+                expander_label = f"{title_text[:60]}..." if len(title_text) > 60 else title_text
+                with st.expander(expander_label):
+                    st.write(f"**Date:** {row.get('date', 'N/A')}")
+                    st.write(f"**Location:** {row.get('location', 'N/A')}")
+                    content_str = str(row.get('cleaned', '') or '')
+                    st.write(f"**Content:** {content_str[:300]}..." if content_str else "**Content:** *(No content preview available)*")
         
         st.info("""
         **How to read this page:**
@@ -3198,19 +2665,7 @@ def main():
             else:
                 st.warning(f"No documents found containing '{search_term}'")
 
-            external_info = external_ctx.get("external_signals", {})
-            if external_info.get("available"):
-                signal_df = external_info.get("data", pd.DataFrame()).copy()
-                title_series = signal_df.get("title", pd.Series(dtype=str)).astype(str)
-                desc_series = signal_df.get("description", pd.Series(dtype=str)).astype(str)
-                hit_mask = title_series.str.contains(search_term_lower, case=False, na=False) | desc_series.str.contains(search_term_lower, case=False, na=False)
-                external_hits = signal_df[hit_mask].copy()
-                st.subheader(f"External signal matches for '{search_term}'")
-                st.info(f"Found {len(external_hits)} external items")
-                if len(external_hits) > 0:
-                    show_cols = [c for c in ["published_at", "provider", "source_name", "title", "url"] if c in external_hits.columns]
-                    st.dataframe(external_hits[show_cols].head(20), width='stretch', hide_index=True)
-        
+
         st.info("""
         **How to read this page:**
         

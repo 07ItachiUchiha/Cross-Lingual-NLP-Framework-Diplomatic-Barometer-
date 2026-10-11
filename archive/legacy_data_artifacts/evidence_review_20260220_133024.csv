@@ -1,0 +1,11 @@
+date,year,title,source,url,economic_score,security_score,shift_signal,review_decision,review_notes
+2000-01-01 00:00:00,2000,MEA Document 2000,MEA,nan,0.375,0.25,-0.125,,
+2000-01-01 00:00:00,2000,MOFA Document 2000,MOFA,nan,0.375,0.25,-0.125,,
+2001-01-01 00:00:00,2001,MEA Document 2001,MEA,nan,0.375,0.25,-0.125,,
+2001-01-01 00:00:00,2001,MOFA Document 2001,MOFA,nan,0.375,0.25,-0.125,,
+2002-01-01 00:00:00,2002,MEA Document 2002,MEA,nan,0.375,0.25,-0.125,,
+2002-01-01 00:00:00,2002,MOFA Document 2002,MOFA,nan,0.375,0.25,-0.125,,
+2003-01-01 00:00:00,2003,MEA Document 2003,MEA,nan,0.375,0.25,-0.125,,
+2003-01-01 00:00:00,2003,MOFA Document 2003,MOFA,nan,0.375,0.25,-0.125,,
+2004-01-01 00:00:00,2004,MEA Document 2004,MEA,nan,0.375,0.25,-0.125,,
+2004-01-01 00:00:00,2004,MOFA Document 2004,MOFA,nan,0.375,0.25,-0.125,,

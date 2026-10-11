@@ -8,7 +8,10 @@ import pandas as pd
 BASE_SOURCE_CREDIBILITY: Dict[str, float] = {
     "MEA": 0.95,
     "MOFA": 0.95,
+    "MEAE": 0.95,
+    "DIPLOMATIE": 0.95,
     "EMBJPIN": 0.90,
+    "EMBFR": 0.90,
     "MOFA_ARCHIVE": 0.88,
     "EMBJPIN_ARCHIVE": 0.86,
     "JETRO": 0.82,
@@ -25,7 +28,7 @@ def _url_boost(url: str) -> float:
     u = url.lower().strip()
     if not u:
         return 0.0
-    if ".go.jp" in u or ".gov.in" in u:
+    if ".go.jp" in u or ".gov.in" in u or ".gouv.fr" in u:
         return 0.03
     if ".org" in u:
         return 0.01

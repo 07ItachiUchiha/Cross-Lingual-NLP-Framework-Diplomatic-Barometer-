@@ -1,0 +1,5 @@
+refYear,period,reporterISO,partnerISO,flowCode,cmdCode,primaryValue,isReported,legacyEstimationFlag,classificationCode
+2023,2023,IND,JPN,M,TOTAL,16543796528.338,False,4,H6
+2023,2023,IND,IND,M,TOTAL,44905495.959,False,4,H6
+2024,2024,IND,JPN,M,TOTAL,17473264432.121,False,4,H6
+2024,2024,IND,IND,M,TOTAL,38150579.743,False,4,H6

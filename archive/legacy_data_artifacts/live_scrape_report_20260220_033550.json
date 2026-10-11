@@ -1,0 +1,910 @@
+{
+  "run_started_utc": "2026-02-20T03:35:50.684984+00:00",
+  "run_finished_utc": "2026-02-20T03:37:34.215924+00:00",
+  "selected_sources": [
+    {
+      "name": "MEA India",
+      "code": "MEA",
+      "rationale": "Primary official source for India's bilateral statements and press releases.",
+      "channel": "official_rss_index",
+      "policy": {
+        "max_start_urls": 4,
+        "max_candidate_links": 35,
+        "max_docs": 10,
+        "delay_seconds": [
+          1.8,
+          3.8
+        ]
+      }
+    },
+    {
+      "name": "MOFA Japan",
+      "code": "MOFA",
+      "rationale": "Primary official Japanese foreign affairs source for India-related diplomacy.",
+      "channel": "official_index",
+      "policy": {
+        "max_start_urls": 3,
+        "max_candidate_links": 30,
+        "max_docs": 8,
+        "delay_seconds": [
+          2.0,
+          4.2
+        ]
+      }
+    },
+    {
+      "name": "Embassy of Japan in India",
+      "code": "EMBJPIN",
+      "rationale": "Official mission-level announcements and bilateral event updates.",
+      "channel": "official_index",
+      "policy": {
+        "max_start_urls": 3,
+        "max_candidate_links": 25,
+        "max_docs": 6,
+        "delay_seconds": [
+          2.0,
+          4.0
+        ]
+      }
+    },
+    {
+      "name": "PIB India",
+      "code": "PIB",
+      "rationale": "Official India government press releases containing diplomatic updates.",
+      "channel": "official_rss_index",
+      "policy": {
+        "max_start_urls": 3,
+        "max_candidate_links": 30,
+        "max_docs": 8,
+        "delay_seconds": [
+          1.8,
+          3.8
+        ]
+      }
+    },
+    {
+      "name": "JETRO Reports",
+      "code": "JETRO",
+      "rationale": "Official Japan trade/publication source relevant to India-Japan economic diplomacy.",
+      "channel": "official_reports",
+      "policy": {
+        "max_start_urls": 2,
+        "max_candidate_links": 20,
+        "max_docs": 8,
+        "delay_seconds": [
+          1.8,
+          3.8
+        ]
+      }
+    },
+    {
+      "name": "MOFA Archived Mirror",
+      "code": "MOFA_ARCHIVE",
+      "rationale": "Archived snapshots for blocked MOFA pages to preserve partial coverage.",
+      "channel": "archive_mirror",
+      "policy": {
+        "max_start_urls": 2,
+        "max_candidate_links": 20,
+        "max_docs": 5,
+        "delay_seconds": [
+          1.0,
+          2.0
+        ]
+      }
+    },
+    {
+      "name": "Embassy Archived Mirror",
+      "code": "EMBJPIN_ARCHIVE",
+      "rationale": "Archived snapshots for blocked Embassy pages to preserve partial coverage.",
+      "channel": "archive_mirror",
+      "policy": {
+        "max_start_urls": 2,
+        "max_candidate_links": 20,
+        "max_docs": 5,
+        "delay_seconds": [
+          1.0,
+          2.0
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "total_documents": 40,
+    "successful_sources": 6,
+    "reachable_sources": 7,
+    "failed_sources": 0,
+    "blocked_sources": 0,
+    "successful_primary_sources": 4,
+    "blocked_primary_sources": 0,
+    "backfill_sources_ok": 2,
+    "backfill_documents": 10
+  },
+  "sources": [
+    {
+      "source": "MEA India",
+      "code": "MEA",
+      "channel": "official_rss_index",
+      "rationale": "Primary official source for India's bilateral statements and press releases.",
+      "status": "ok",
+      "documents": 8,
+      "candidate_links_seen": 16,
+      "start_failures": 0,
+      "blocked_failures": 0,
+      "blocked_urls": [],
+      "errors": [],
+      "urls_tested": [
+        "https://www.mea.gov.in/press-releases.htm",
+        "https://www.mea.gov.in/bilateral-documents.htm?dtl/1/india-japan-relations",
+        "https://www.mea.gov.in/SiteMap.htm",
+        "https://www.mea.gov.in/rss.xml",
+        "https://www.mea.gov.in/"
+      ],
+      "policy": {
+        "max_start_urls": 4,
+        "max_candidate_links": 35,
+        "max_docs": 8,
+        "delay_seconds": [
+          1.8,
+          3.8
+        ]
+      },
+      "fetch_log": [
+        {
+          "url": "https://www.mea.gov.in/press-releases.htm",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:35:50.691979+00:00"
+        },
+        {
+          "url": "https://www.mea.gov.in/bilateral-documents.htm?dtl/1/india-japan-relations",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:35:50.709011+00:00"
+        },
+        {
+          "url": "https://www.mea.gov.in/images/pdf/national-archive-new.pdf",
+          "phase": "document",
+          "method": "pdf_link",
+          "from_cache": false,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:35:54.492854+00:00"
+        },
+        {
+          "url": "https://www.mea.gov.in/Images/amb1/MEA_Glossary.pdf",
+          "phase": "document",
+          "method": "pdf_link",
+          "from_cache": false,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:35:57.182523+00:00"
+        },
+        {
+          "url": "https://www.mea.gov.in/Portal/Images/stqc-certificate-mea-13042023.PDF",
+          "phase": "document",
+          "method": "pdf_link",
+          "from_cache": false,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:35:59.518805+00:00"
+        },
+        {
+          "url": "https://www.mea.gov.in/bilateral-documents.htm?dtl/1/india-japan-relations#contentStart",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:02.987587+00:00"
+        },
+        {
+          "url": "https://www.mea.gov.in/Speeches-Statements.htm?50/Speeches__amp;_Statements",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:06.417484+00:00"
+        },
+        {
+          "url": "https://www.mea.gov.in/press-releases.htm?51/Press_Releases",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:08.403765+00:00"
+        },
+        {
+          "url": "https://www.mea.gov.in/bilateral-documents.htm?53/Bilateral/Multilateral_Documents",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:10.363218+00:00"
+        },
+        {
+          "url": "https://www.mea.gov.in/bilateral-briefs.htm",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:13.486616+00:00"
+        }
+      ],
+      "started_at_utc": "2026-02-20T03:35:50.684984+00:00",
+      "finished_at_utc": "2026-02-20T03:36:13.537638+00:00"
+    },
+    {
+      "source": "MOFA Japan",
+      "code": "MOFA",
+      "channel": "official_index",
+      "rationale": "Primary official Japanese foreign affairs source for India-related diplomacy.",
+      "status": "ok",
+      "documents": 8,
+      "candidate_links_seen": 28,
+      "start_failures": 0,
+      "blocked_failures": 0,
+      "blocked_urls": [],
+      "errors": [],
+      "urls_tested": [
+        "https://www.mofa.go.jp/region/asia-paci/india/index.html",
+        "https://www.mofa.go.jp/press/release/index.html",
+        "https://www.mofa.go.jp/sitemap.xml",
+        "https://www.mofa.go.jp/"
+      ],
+      "policy": {
+        "max_start_urls": 3,
+        "max_candidate_links": 30,
+        "max_docs": 8,
+        "delay_seconds": [
+          2.0,
+          4.2
+        ]
+      },
+      "fetch_log": [
+        {
+          "url": "https://www.mofa.go.jp/region/asia-paci/india/index.html",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:13.539579+00:00"
+        },
+        {
+          "url": "https://www.mofa.go.jp/region/asia-paci/india/index.html#contents",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:16.881460+00:00"
+        },
+        {
+          "url": "https://www.mofa.go.jp/region/asia-paci/india/index.html",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:19.899207+00:00"
+        },
+        {
+          "url": "https://www.mofa.go.jp/mofaj/area/india/index.html",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:23.966186+00:00"
+        },
+        {
+          "url": "https://www.mofa.go.jp/region/asia-paci/india/data.html",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:27.886978+00:00"
+        },
+        {
+          "url": "https://www.mofa.go.jp/s_sa/sw/in/pageite_000001_00010.html",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:30.184908+00:00"
+        },
+        {
+          "url": "https://www.mofa.go.jp/region/pageite_000001_00012.html",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:32.909900+00:00"
+        },
+        {
+          "url": "https://www.mofa.go.jp/press/release/pressite_000001_01901.html",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:36.336629+00:00"
+        },
+        {
+          "url": "https://www.mofa.go.jp/s_sa/sw/in/pageite_000001_00003.html",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:39.854601+00:00"
+        }
+      ],
+      "started_at_utc": "2026-02-20T03:36:13.538596+00:00",
+      "finished_at_utc": "2026-02-20T03:36:39.879585+00:00"
+    },
+    {
+      "source": "Embassy of Japan in India",
+      "code": "EMBJPIN",
+      "channel": "official_index",
+      "rationale": "Official mission-level announcements and bilateral event updates.",
+      "status": "ok",
+      "documents": 6,
+      "candidate_links_seen": 25,
+      "start_failures": 0,
+      "blocked_failures": 0,
+      "blocked_urls": [],
+      "errors": [],
+      "urls_tested": [
+        "https://www.in.emb-japan.go.jp/",
+        "https://www.in.emb-japan.go.jp/itpr_en/Japan_India_Relations.html",
+        "https://www.in.emb-japan.go.jp/sitemap.xml"
+      ],
+      "policy": {
+        "max_start_urls": 3,
+        "max_candidate_links": 25,
+        "max_docs": 6,
+        "delay_seconds": [
+          2.0,
+          4.0
+        ]
+      },
+      "fetch_log": [
+        {
+          "url": "https://www.in.emb-japan.go.jp/",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:39.882610+00:00"
+        },
+        {
+          "url": "https://www.in.emb-japan.go.jp/files/100908093.pdf",
+          "phase": "document",
+          "method": "pdf_link",
+          "from_cache": false,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:43.148809+00:00"
+        },
+        {
+          "url": "https://www.in.emb-japan.go.jp/files/100893444.pdf",
+          "phase": "document",
+          "method": "pdf_link",
+          "from_cache": false,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:47.065481+00:00"
+        },
+        {
+          "url": "https://www.in.emb-japan.go.jp/files/000192371.pdf",
+          "phase": "document",
+          "method": "pdf_link",
+          "from_cache": false,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:49.459003+00:00"
+        },
+        {
+          "url": "https://www.in.emb-japan.go.jp/files/000124557.pdf",
+          "phase": "document",
+          "method": "pdf_link",
+          "from_cache": false,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:51.957173+00:00"
+        },
+        {
+          "url": "https://www.in.emb-japan.go.jp/files/100624337.pdf",
+          "phase": "document",
+          "method": "pdf_link",
+          "from_cache": false,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:55.926135+00:00"
+        },
+        {
+          "url": "https://www.in.emb-japan.go.jp/files/100607465.pdf",
+          "phase": "document",
+          "method": "pdf_link",
+          "from_cache": false,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:59.365116+00:00"
+        }
+      ],
+      "started_at_utc": "2026-02-20T03:36:39.879585+00:00",
+      "finished_at_utc": "2026-02-20T03:36:59.365116+00:00"
+    },
+    {
+      "source": "PIB India",
+      "code": "PIB",
+      "channel": "official_rss_index",
+      "rationale": "Official India government press releases containing diplomatic updates.",
+      "status": "reachable_no_docs",
+      "documents": 0,
+      "candidate_links_seen": 0,
+      "start_failures": 0,
+      "blocked_failures": 0,
+      "blocked_urls": [],
+      "errors": [],
+      "urls_tested": [
+        "https://pib.gov.in/",
+        "https://pib.gov.in/PressReleasePage.aspx",
+        "https://pib.gov.in/RssMain.aspx"
+      ],
+      "policy": {
+        "max_start_urls": 3,
+        "max_candidate_links": 30,
+        "max_docs": 8,
+        "delay_seconds": [
+          1.8,
+          3.8
+        ]
+      },
+      "fetch_log": [
+        {
+          "url": "https://pib.gov.in/",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:59.368929+00:00"
+        },
+        {
+          "url": "https://pib.gov.in/PressReleasePage.aspx",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:59.375924+00:00"
+        },
+        {
+          "url": "https://pib.gov.in/RssMain.aspx",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:59.384853+00:00"
+        }
+      ],
+      "started_at_utc": "2026-02-20T03:36:59.365773+00:00",
+      "finished_at_utc": "2026-02-20T03:36:59.384853+00:00"
+    },
+    {
+      "source": "JETRO Reports",
+      "code": "JETRO",
+      "channel": "official_reports",
+      "rationale": "Official Japan trade/publication source relevant to India-Japan economic diplomacy.",
+      "status": "ok",
+      "documents": 8,
+      "candidate_links_seen": 15,
+      "start_failures": 0,
+      "blocked_failures": 0,
+      "blocked_urls": [],
+      "errors": [],
+      "urls_tested": [
+        "https://www.jetro.go.jp/en/reports/",
+        "https://www.jetro.go.jp/en/invest/"
+      ],
+      "policy": {
+        "max_start_urls": 2,
+        "max_candidate_links": 20,
+        "max_docs": 8,
+        "delay_seconds": [
+          1.8,
+          3.8
+        ]
+      },
+      "fetch_log": [
+        {
+          "url": "https://www.jetro.go.jp/en/reports/",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:36:59.386895+00:00"
+        },
+        {
+          "url": "https://www.jetro.go.jp/",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:02.006745+00:00"
+        },
+        {
+          "url": "https://www.jetro.go.jp/en/invest/",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:04.042041+00:00"
+        },
+        {
+          "url": "https://www.jetro.go.jp/en/database/japanstreet/",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:05.991926+00:00"
+        },
+        {
+          "url": "https://www.jetro.go.jp/en/database/j-messe/",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:08.433682+00:00"
+        },
+        {
+          "url": "https://www.jetro.go.jp/en/trends/foods/",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:10.856801+00:00"
+        },
+        {
+          "url": "https://www.jetro.go.jp/en/j-bridge.html",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:13.626879+00:00"
+        },
+        {
+          "url": "https://www.jetro.go.jp/en/reports/survey/",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:16.623939+00:00"
+        },
+        {
+          "url": "https://www.jetro.go.jp/en/reports/white_paper/",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:19.092093+00:00"
+        }
+      ],
+      "started_at_utc": "2026-02-20T03:36:59.385860+00:00",
+      "finished_at_utc": "2026-02-20T03:37:19.135121+00:00"
+    },
+    {
+      "source": "MOFA Archived Mirror",
+      "code": "MOFA_ARCHIVE",
+      "channel": "archive_mirror",
+      "rationale": "Archived snapshots for blocked MOFA pages to preserve partial coverage.",
+      "status": "ok",
+      "documents": 5,
+      "candidate_links_seen": 17,
+      "start_failures": 0,
+      "blocked_failures": 0,
+      "blocked_urls": [],
+      "errors": [],
+      "urls_tested": [
+        "https://web.archive.org/web/20240101000000/https://www.mofa.go.jp/region/asia-paci/india/index.html",
+        "https://web.archive.org/web/20240101000000/https://www.mofa.go.jp/press/release/index.html"
+      ],
+      "policy": {
+        "max_start_urls": 2,
+        "max_candidate_links": 20,
+        "max_docs": 5,
+        "delay_seconds": [
+          1.0,
+          2.0
+        ]
+      },
+      "fetch_log": [
+        {
+          "url": "https://web.archive.org/web/20240101000000/https://www.mofa.go.jp/region/asia-paci/india/index.html",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:19.137117+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20231211122412*/https://www.mofa.go.jp/region/asia-paci/india/index.html",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:20.579113+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20240101000000/https://www.mofa.go.jp/region/asia-paci/india/index.html",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:22.626363+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20240101000000/https://www.mofa.go.jp/region/asia-paci/india/index.html#close",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:23.921089+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20240101000000/https://www.mofa.go.jp/region/asia-paci/india/index.html#expand",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:25.131099+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20240101000000/https://www.mofa.go.jp/region/asia-paci/india/index.html#contents",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:26.554134+00:00"
+        }
+      ],
+      "started_at_utc": "2026-02-20T03:37:19.136117+00:00",
+      "finished_at_utc": "2026-02-20T03:37:26.569250+00:00"
+    },
+    {
+      "source": "Embassy Archived Mirror",
+      "code": "EMBJPIN_ARCHIVE",
+      "channel": "archive_mirror",
+      "rationale": "Archived snapshots for blocked Embassy pages to preserve partial coverage.",
+      "status": "ok",
+      "documents": 5,
+      "candidate_links_seen": 24,
+      "start_failures": 0,
+      "blocked_failures": 0,
+      "blocked_urls": [],
+      "errors": [],
+      "urls_tested": [
+        "https://web.archive.org/web/20240101000000/https://www.in.emb-japan.go.jp/",
+        "https://web.archive.org/web/20240101000000/https://www.in.emb-japan.go.jp/itpr_en/Japan_India_Relations.html"
+      ],
+      "policy": {
+        "max_start_urls": 2,
+        "max_candidate_links": 20,
+        "max_docs": 5,
+        "delay_seconds": [
+          1.0,
+          2.0
+        ]
+      },
+      "fetch_log": [
+        {
+          "url": "https://web.archive.org/web/20240101000000/https://www.in.emb-japan.go.jp/",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:26.570251+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20240101112846*/https://www.in.emb-japan.go.jp/",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:27.822211+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20240101000000/https://www.in.emb-japan.go.jp/",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:29.376101+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20240101000000/https://www.in.emb-japan.go.jp/#close",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:30.943950+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20240101000000/https://www.in.emb-japan.go.jp/#expand",
+          "phase": "document",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:32.773019+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20240101000000/https://www.in.emb-japan.go.jp/itpr_en/Japan_India_Relations.html",
+          "phase": "start",
+          "method": "cache",
+          "from_cache": true,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:32.783990+00:00"
+        },
+        {
+          "url": "https://web.archive.org/web/20240716184752/https://www.in.emb-japan.go.jp/files/000192371.pdf",
+          "phase": "document",
+          "method": "pdf_link",
+          "from_cache": false,
+          "fallback_used": false,
+          "status_code": 200,
+          "error": null,
+          "attempts": [],
+          "timestamp_utc": "2026-02-20T03:37:34.198813+00:00"
+        }
+      ],
+      "started_at_utc": "2026-02-20T03:37:26.569250+00:00",
+      "finished_at_utc": "2026-02-20T03:37:34.198813+00:00"
+    }
+  ],
+  "blocked_sources": [],
+  "outputs": {
+    "documents_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\live_scrape_20260220_033550.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\live_scrape_report_20260220_033550.json",
+    "blocked_sources_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\blocked_sources_20260220_033550.json",
+    "http_cache_db": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\live_scrape_http_cache.sqlite"
+  },
+  "pass": true
+}

@@ -1,0 +1,1002 @@
+source_url,title,link,published_utc,summary
+https://data.gov.in/backend/dms/v1/rss.xml,"<a href=""http://www.data.gov.in/catalog/real-time-air-quality-index"" hreflang=""en"">Real time Air Quality Index</a>",http://www.data.gov.in/catalog/real-time-air-quality-index,2016-07-25T09:57:00+00:00,"<p>Get Real time National Air Quality Index values from different monitoring stations across India. The pollutants monitored are Sulphur Dioxide (SO2), Nitrogen Dioxide (NO2), Particulate Matter (PM10 and PM2.5) , Carbon Monoxide (CO), Ozone(O3) etc.</p>"
+https://data.gov.in/backend/dms/v1/rss.xml,"<a href=""http://www.data.gov.in/catalog/national-social-assistance-programmensap-beneficiaries-abstract"" hreflang=""en"">National Social Assistance Programme(NSAP) Beneficiaries Abstract </a>",http://www.data.gov.in/catalog/national-social-assistance-programmensap-beneficiaries-abstract,2023-11-14T14:58:00+00:00,<p>The National Social Assistance Programme (NSAP) is a welfare programme being administered by the Ministry of Rural Development. This programme is being implemented in rural areas as well as urban areas.</p>
+https://data.gov.in/backend/dms/v1/rss.xml,"<a href=""http://www.data.gov.in/catalog/jal-jeevan-mission-jjm"" hreflang=""en"">Jal Jeevan Mission (JJM)</a>",http://www.data.gov.in/catalog/jal-jeevan-mission-jjm,2022-01-25T12:57:00+00:00,<p>The Catalog contains dataset under Jal Jeevan Mission (JJM).</p>
+https://data.gov.in/backend/dms/v1/rss.xml,"<a href=""http://www.data.gov.in/catalog/region-wise-district-wise-commodity-wise-daily-food-stock-position-fci"" hreflang=""en"">Region wise, District Wise, Commodity wise, Daily food stock Position of FCI</a>",http://www.data.gov.in/catalog/region-wise-district-wise-commodity-wise-daily-food-stock-position-fci,2017-01-18T10:49:00+00:00,"<p>Get data on Region wise, District Wise, Commodity wise, Daily food stock Position of FCI. Commodities are Bajra, Barley, DAAL Chana, Jowar, Maize, Masur, Moong, Paddy, Ragi, Rice-Parboiled, Rice-Raw, Sugar, Tur(Arhar), Urad, Wheat and Wheat URS (FIG.IN QTLS.)</p>"
+https://data.gov.in/backend/dms/v1/rss.xml,"<a href=""http://www.data.gov.in/catalog/etaal-electronic-transaction-aggregation-and-analysis-layer"" hreflang=""en"">eTaal- Electronic Transaction Aggregation and Analysis Layer</a>",http://www.data.gov.in/catalog/etaal-electronic-transaction-aggregation-and-analysis-layer,2025-05-19T12:58:00+00:00,<p>eTaal- Electronic Transaction Aggregation and Analysis Layer</p>
+https://data.gov.in/backend/dms/v1/rss.xml,"<a href=""http://www.data.gov.in/catalog/local-government-directory-lgd"" hreflang=""en"">Local Government Directory (LGD)</a>",http://www.data.gov.in/catalog/local-government-directory-lgd,2022-07-22T12:27:00+00:00,"<p>LGD is a complete directory of Land Regions/Revenue, Rural and Urban Local Governments. LGD aims to keep all information about the structure of Local Governments and revenue entities online.</p>"
+https://data.gov.in/backend/dms/v1/rss.xml,"<a href=""http://www.data.gov.in/catalog/survey-villages-abadi-and-mapping-improvised-technology-village-areas-svamitva"" hreflang=""en"">Survey of Villages Abadi and Mapping with Improvised Technology in Village Areas (SVAMITVA) </a>",http://www.data.gov.in/catalog/survey-villages-abadi-and-mapping-improvised-technology-village-areas-svamitva,2022-08-10T10:01:00+00:00,"<p>The scheme is a reformative step towards the establishment of clear ownership of property in rural inhabited (Abadi) areas, by mapping of land parcels using drone technology and providing Record of Rights to village household owners with the issuance of legal ownership cards (Property cards/Title deeds) to the property owners.</p>"
+https://data.gov.in/backend/dms/v1/rss.xml,"<a href=""http://www.data.gov.in/catalog/mahatma-gandhi-national-rural-employment-guarantee-act-mgnrega"" hreflang=""en"">Mahatma Gandhi National Rural Employment Guarantee Act (MGNREGA)</a>",http://www.data.gov.in/catalog/mahatma-gandhi-national-rural-employment-guarantee-act-mgnrega,2023-09-11T16:06:00+00:00,<p>An Act to provide for the enhancement of livelihood security of the households in rural areas of the country by providing at least one hundred days of guaranteed wage employment in every financial year to every household whose adult members volunteer to do unskilled manual work and for matters connected therewith or incidental thereto.</p>
+https://data.gov.in/backend/dms/v1/rss.xml,"<a href=""http://www.data.gov.in/catalog/surat-citizen-centric-services"" hreflang=""en"">Surat Citizen Centric Services</a>",http://www.data.gov.in/catalog/surat-citizen-centric-services,2017-09-20T15:49:00+00:00,"<p>The catalog contains information related to statistical information related to various citizen centric services provided by Surat Municipal Corporation. The APIs are made available for Birth - Death Registration, Property Tax, Professional Tax, BRTS, City Bus, Building Plan approval, etc. The availability of data varies depending of the type of data set.</p>"
+https://www.un.org/sg/en/rss.xml,SG's priorities 2026 (EN),https://www.un.org/sg/en/quote/402015,2026-01-20T22:17:40+00:00,"<span class=""field field--name-title field--type-string field--label-hidden"">SG's priorities 2026 (EN)</span>
+
+
+
+<div class=""field field--name-field-link-to field--type-link field--label-above"">
+      <div class=""field__label"">Link to</div>
+    <div class=""field__items"">
+                      
+                                            
+                                                                                                      
+                                      
+      <div class=""field__item""><a href=""https://www.un.org/sg/en/content/sg/statements/2026-01-15/secretary-generals-remarks-the-general-assembly-priorities-for-2026"">https://www.un.org/sg/en/content/sg/statements/2026-01-15/secretary-generals-re…</a></div>
+      </div>
+</div><span class=""field field--name-uid field--type-entity-reference field--label-hidden""><span>Christel Nonne…</span></span>
+<span class=""field field--name-created field--type-created field--label-hidden""><time class=""datetime"" datetime=""2026-01-20T17:17:40-05:00"" title=""Tuesday, 20 January, 2026 - 17:17"">01/20/2026 - 17:17</time>
+</span>
+
+
+
+<div class=""field field--name-field-date field--type-datetime field--label-above"">
+      <div class=""field__label"">Quote Date</div>
+    <div class=""field__items"">
+          <div class=""field__item""><time class=""datetime"" datetime=""2025-01-15T12:00:00Z"">Wednesday, 15 January, 2025</time>
+</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-text-position field--type-list-string field--label-above"">
+      <div class=""field__label"">Text Position</div>
+    <div class=""field__items"">
+          <div class=""field__item"">bottom</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-slider-image-caption field--type-string field--label-above"">
+      <div class=""field__label"">Slider Image Caption</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Secretary-General António Guterres delivers his report on the work of the Organization and his priorities for 2026 during the 70th plenary meeting of the General Assembly.</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-slider-photo-credit field--type-string field--label-above"">
+      <div class=""field__label"">Slider Photo Credit</div>
+    <div class=""field__items"">
+          <div class=""field__item"">UN Photo/Manuel Elías</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-image-legacy field--type-entity-reference-entity-modify field--label-above"">
+      <div class=""field__label"">Media</div>
+    <div class=""field__items"">
+          <div class=""field__item""><div>
+        
+  
+      
+  
+    
+<div class=""field field--name-field-media-image field--type-image field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">    
+                  <source height=""320"" media=""all and (min-width: 1392px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 1016px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 768px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 576px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" type=""image/jpeg"" width=""480"" />
+                  <img alt=""António Guterres en el estrado del Salón de la Asamblea General."" height=""480"" src=""https://www.un.org/sg/sites/default/files/styles/medium_2x/public/image/2026-01/un71129800-me19624_.jpg?itok=iAHUhXBf"" width=""720"" />
+
+  
+
+</div>
+      </div>
+</div>
+
+
+              </div></div>
+      </div>
+</div>"
+https://www.un.org/sg/en/rss.xml,Message of the Secretary-General for 2026,https://www.un.org/sg/en/quote/401945,2025-12-29T18:57:51+00:00,"<span class=""field field--name-title field--type-string field--label-hidden"">Message of the Secretary-General for 2026</span>
+<span class=""field field--name-uid field--type-entity-reference field--label-hidden""><span>Christel Nonne…</span></span>
+<span class=""field field--name-created field--type-created field--label-hidden""><time class=""datetime"" datetime=""2025-12-29T13:57:51-05:00"" title=""Monday, 29 December, 2025 - 13:57"">12/29/2025 - 13:57</time>
+</span>
+
+
+
+<div class=""field field--name-field-date field--type-datetime field--label-above"">
+      <div class=""field__label"">Quote Date</div>
+    <div class=""field__items"">
+          <div class=""field__item""><time class=""datetime"" datetime=""2025-12-29T12:00:00Z"">Monday, 29 December, 2025</time>
+</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-text-position field--type-list-string field--label-above"">
+      <div class=""field__label"">Text Position</div>
+    <div class=""field__items"">
+          <div class=""field__item"">bottom</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-slider-photo-credit field--type-string field--label-above"">
+      <div class=""field__label"">Slider Photo Credit</div>
+    <div class=""field__items"">
+          <div class=""field__item"">United Nations</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-image-legacy field--type-entity-reference-entity-modify field--label-above"">
+      <div class=""field__label"">Media</div>
+    <div class=""field__items"">
+          <div class=""field__item"">
+
+
+<div class=""embedded-media media-type- view-mode-default"">
+      
+
+<div class=""field field--name-field-media-un-kaltura field--type-un-kaltura field--label-visually_hidden"">
+      <div class=""field__label visually-hidden"">Kaltura</div>
+    <div class=""field__items"">
+                  <div class=""field__item ratio ratio-16x9"">
+                    <img alt=""SG's New Year's 2026 Video Message (EN)"" src=""https://www.un.org/sg/sites/default/files/scald_kaltura/Y0qvu7S60qMWL0xJWxVLFHVyNx4vPTanfZDzAm4vFt4.jpg"" tabindex=""0"" />
+           
+        </div>
+            </div>
+</div>
+
+  </div>
+
+</div>
+      </div>
+</div>"
+https://www.un.org/sg/en/rss.xml,"AI Governance, Digital Cooperation & Present-Day Priorities",https://www.un.org/sg/en/node/401826,2025-11-29T15:47:53+00:00,"<span class=""field field--name-title field--type-string field--label-hidden"">AI Governance, Digital Cooperation &amp; Present-Day Priorities</span>
+
+<div class=""field field--name-field-date-range field--type-daterange field--label-above"">
+      <div class=""field__label"">Timeline date</div>
+    <div class=""field__items"">
+          <div class=""field__item""><time class=""datetime"" datetime=""2023-01-01T12:00:00Z"">1 January, 2023</time>
+ - <time class=""datetime"" datetime=""2025-12-31T12:00:00Z"">31 December, 2025</time>
+</div>
+      </div>
+</div>
+<span class=""field field--name-uid field--type-entity-reference field--label-hidden""><span>Robert Neshovski</span></span>
+<span class=""field field--name-created field--type-created field--label-hidden""><time class=""datetime"" datetime=""2025-11-29T10:47:53-05:00"" title=""Saturday, 29 November, 2025 - 10:47"">11/29/2025 - 10:47</time>
+</span>
+
+<div class=""clearfix text-formatted field field--name-body field--type-text-with-summary field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><p>SG leads the drive for global AI governance, peacekeeping transitions, humanitarian aid reform, and preparations for the Summit of the Future (2024) and Pact for the Future.</p></div>
+      </div>
+</div>
+
+
+
+<div class=""field field--name-field-link field--type-link field--label-above"">
+      <div class=""field__label"">Link</div>
+    <div class=""field__items"">
+                      
+                                            
+                                                                                                      
+                                      
+      <div class=""field__item""><a href=""https://www.un.org/pact-for-the-future/en"">Learn more about the Pact for the Future...</a></div>
+      </div>
+</div>
+
+
+<div class=""field field--name-field-section field--type-entity-reference field--label-inline"">
+      <div class=""field__label"">by</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/section/dsg"" hreflang=""en"">Deputy Secretary-General</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-tags field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Tags</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/tags/sg-tenure"" hreflang=""en"">sg-tenure</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-type field--type-list-string field--label-above"">
+      <div class=""field__label"">Timeline Type</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Slide</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-media field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Media</div>
+    <div class=""field__items"">
+          <div class=""field__item"">
+
+
+<div class=""embedded-media media-type- view-mode-default"">
+      
+
+<div class=""field field--name-field-media-un-kaltura field--type-un-kaltura field--label-visually_hidden"">
+      <div class=""field__label visually-hidden"">Kaltura</div>
+    <div class=""field__items"">
+                  <div class=""field__item ratio ratio-16x9"">
+                    <img alt=""(High Level Dialogue with the Secretary-General) Summit of the Future Action Days"" src=""https://www.un.org/sg/sites/default/files/scald_kaltura/jzos34zaQkpCO639UyOHpsKn9TdMq1op9bTorb8I0BQ.jpg"" tabindex=""0"" />
+           
+        </div>
+            </div>
+</div>
+
+  </div>
+
+</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-background-color field--type-entity-reference field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><div class=""taxonomy-term vocabulary-colorpalette-colors"" id=""taxonomy-term-16676"">
+  
+      <h2><a href=""https://www.un.org/sg/en/colors/information-blue"">
+<div class=""field field--name-name field--type-string field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">Information Blue</div>
+      </div>
+</div>
+</a></h2>
+    
+  <div class=""content"">
+    
+<div class=""field field--name-field-colorpalette-hexcode field--type-string field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">#0a5a82</div>
+      </div>
+</div>
+
+  </div>
+</div>
+</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-group field--type-string field--label-above"">
+      <div class=""field__label"">Timeline Group</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Pact for the Future</div>
+      </div>
+</div>"
+https://www.un.org/sg/en/rss.xml,Climate Leadership Intensifies – COP27 / Loss & Damage Fund,https://www.un.org/sg/en/node/401825,2025-11-29T15:46:35+00:00,"<span class=""field field--name-title field--type-string field--label-hidden"">Climate Leadership Intensifies – COP27 / Loss &amp; Damage Fund</span>
+
+<div class=""field field--name-field-date-range field--type-daterange field--label-above"">
+      <div class=""field__label"">Timeline date</div>
+    <div class=""field__items"">
+          <div class=""field__item""><time class=""datetime"" datetime=""2022-11-01T12:00:00Z"">1 November, 2022</time>
+</div>
+      </div>
+</div>
+<span class=""field field--name-uid field--type-entity-reference field--label-hidden""><span>Robert Neshovski</span></span>
+<span class=""field field--name-created field--type-created field--label-hidden""><time class=""datetime"" datetime=""2025-11-29T10:46:35-05:00"" title=""Saturday, 29 November, 2025 - 10:46"">11/29/2025 - 10:46</time>
+</span>
+
+<div class=""clearfix text-formatted field field--name-body field--type-text-with-summary field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><p>SG champions climate justice and calls for a windfall tax on fossil fuel companies; supports creation of Loss &amp; Damage Fund.</p></div>
+      </div>
+</div>
+
+
+
+<div class=""field field--name-field-section field--type-entity-reference field--label-inline"">
+      <div class=""field__label"">by</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/section/antonio-guterres"" hreflang=""en"">António Guterres</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-tags field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Tags</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/tags/sg-tenure"" hreflang=""en"">sg-tenure</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-type field--type-list-string field--label-above"">
+      <div class=""field__label"">Timeline Type</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Slide</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-media field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Media</div>
+    <div class=""field__items"">
+          <div class=""field__item""><div>
+        
+  
+      
+  
+    
+<div class=""field field--name-field-media-image field--type-image field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">    
+                  <source height=""320"" media=""all and (min-width: 1392px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 1016px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" media=""all and (min-width: 768px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" media=""all and (min-width: 576px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" type=""image/jpeg"" width=""480"" />
+                  <img alt=""07-11-2022-COP27-Guterres-opening-1150"" height=""316"" src=""https://www.un.org/sg/sites/default/files/styles/medium_2x/public/images/slider/English/07-11-2022-COP27-Guterres-opening-1150.jpg?itok=SfhPiBLd"" title=""07-11-2022-COP27-Guterres-opening-1150.jpg"" width=""720"" />
+
+  
+
+</div>
+      </div>
+</div>
+
+
+              </div></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-background-color field--type-entity-reference field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><div class=""taxonomy-term vocabulary-colorpalette-colors"" id=""taxonomy-term-13336"">
+  
+      <h2><a href=""https://www.un.org/sg/en/colors/absolute-black"">
+<div class=""field field--name-name field--type-string field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">Absolute Black</div>
+      </div>
+</div>
+</a></h2>
+    
+  <div class=""content"">
+    
+<div class=""field field--name-field-colorpalette-hexcode field--type-string field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">#000000</div>
+      </div>
+</div>
+
+  </div>
+</div>
+</div>
+      </div>
+</div>"
+https://www.un.org/sg/en/rss.xml,War in Ukraine: Response and Diplomacy,https://www.un.org/sg/en/node/401824,2025-11-29T15:44:27+00:00,"<span class=""field field--name-title field--type-string field--label-hidden"">War in Ukraine: Response and Diplomacy</span>
+
+<div class=""field field--name-field-date-range field--type-daterange field--label-above"">
+      <div class=""field__label"">Timeline date</div>
+    <div class=""field__items"">
+          <div class=""field__item""><time class=""datetime"" datetime=""2022-02-01T12:00:00Z"">1 February, 2022</time>
+ - <time class=""datetime"" datetime=""2025-11-29T12:00:00Z"">29 November, 2025</time>
+</div>
+      </div>
+</div>
+<span class=""field field--name-uid field--type-entity-reference field--label-hidden""><span>Robert Neshovski</span></span>
+<span class=""field field--name-created field--type-created field--label-hidden""><time class=""datetime"" datetime=""2025-11-29T10:44:27-05:00"" title=""Saturday, 29 November, 2025 - 10:44"">11/29/2025 - 10:44</time>
+</span>
+
+<div class=""clearfix text-formatted field field--name-body field--type-text-with-summary field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><p>SG calls for immediate cessation of hostilities and engages in Black Sea Grain Initiative diplomacy.</p></div>
+      </div>
+</div>
+
+
+
+<div class=""field field--name-field-section field--type-entity-reference field--label-inline"">
+      <div class=""field__label"">by</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/section/antonio-guterres"" hreflang=""en"">António Guterres</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-tags field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Tags</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/tags/sg-tenure"" hreflang=""en"">sg-tenure</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-type field--type-list-string field--label-above"">
+      <div class=""field__label"">Timeline Type</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Slide</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-background field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Background</div>
+    <div class=""field__items"">
+          <div class=""field__item""><div>
+        
+  
+      
+  
+    
+<div class=""field field--name-field-media-image field--type-image field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">    
+                  <source height=""320"" media=""all and (min-width: 1392px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 1016px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" media=""all and (min-width: 768px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" media=""all and (min-width: 576px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" type=""image/jpeg"" width=""480"" />
+                  <img alt=""24-02-2022-UN-Photo-UN7924212-Ukraine-Guterres-1150"" height=""316"" src=""https://www.un.org/sg/sites/default/files/styles/medium_2x/public/images/slider/English/24-02-2022-UN-Photo-UN7924212-Ukraine-Guterres-1150.jpg?itok=R3c1tff9"" title=""24-02-2022-UN-Photo-UN7924212-Ukraine-Guterres-1150.jpg"" width=""720"" />
+
+  
+
+</div>
+      </div>
+</div>
+
+
+              </div></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-media field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Media</div>
+    <div class=""field__items"">
+          <div class=""field__item""><div>
+        
+  
+      
+  
+    
+<div class=""field field--name-field-media-image field--type-image field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">    
+                  <source height=""320"" media=""all and (min-width: 1392px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 1016px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 768px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 576px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" type=""image/jpeg"" width=""480"" />
+                  <img alt=""Secretary-General Inspects Ukraine’s Grain Export in Istanbul, August 2022"" height=""480"" src=""https://www.un.org/sg/sites/default/files/styles/medium_2x/public/2023-07/sg-grain-export-2022.jpg?itok=YOExC7nk"" width=""720"" />
+
+  
+
+</div>
+      </div>
+</div>
+
+
+              </div></div>
+      </div>
+</div>"
+https://www.un.org/sg/en/rss.xml,Re-elected for a Second Term (2022-2026),https://www.un.org/sg/en/node/401823,2025-11-29T15:35:40+00:00,"<span class=""field field--name-title field--type-string field--label-hidden"">Re-elected for a Second Term (2022-2026)</span>
+
+<div class=""field field--name-field-date-range field--type-daterange field--label-above"">
+      <div class=""field__label"">Timeline date</div>
+    <div class=""field__items"">
+          <div class=""field__item""><time class=""datetime"" datetime=""2021-06-18T12:00:00Z"">18 June, 2021</time>
+</div>
+      </div>
+</div>
+<span class=""field field--name-uid field--type-entity-reference field--label-hidden""><span>Robert Neshovski</span></span>
+<span class=""field field--name-created field--type-created field--label-hidden""><time class=""datetime"" datetime=""2025-11-29T10:35:40-05:00"" title=""Saturday, 29 November, 2025 - 10:35"">11/29/2025 - 10:35</time>
+</span>
+
+<div class=""clearfix text-formatted field field--name-body field--type-text-with-summary field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><p>António Guterres is unanimously reappointed for a second term as Secretary-General.</p></div>
+      </div>
+</div>
+
+
+
+<div class=""field field--name-field-section field--type-entity-reference field--label-inline"">
+      <div class=""field__label"">by</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/section/antonio-guterres"" hreflang=""en"">António Guterres</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-tags field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Tags</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/tags/sg-tenure"" hreflang=""en"">sg-tenure</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-type field--type-list-string field--label-above"">
+      <div class=""field__label"">Timeline Type</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Slide</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-background field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Background</div>
+    <div class=""field__items"">
+          <div class=""field__item""><div>
+        
+  
+      
+  
+    
+<div class=""field field--name-field-media-image field--type-image field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">    
+                  <source height=""320"" media=""all and (min-width: 1392px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 1016px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""267"" media=""all and (min-width: 768px)"" type=""image/jpeg"" width=""400"" />
+              <source height=""267"" media=""all and (min-width: 576px)"" type=""image/jpeg"" width=""400"" />
+              <source height=""267"" type=""image/jpeg"" width=""400"" />
+                  <img alt=""alt"" height=""267"" src=""https://www.un.org/sg/sites/default/files/styles/medium_2x/public/thumbnails/image/IV_conclusion.jpg?itok=J34ZlqKC"" width=""400"" />
+
+  
+
+</div>
+      </div>
+</div>
+
+
+              </div></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-media field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Media</div>
+    <div class=""field__items"">
+          <div class=""field__item"">
+
+
+<div class=""embedded-media media-type- view-mode-default"">
+      
+
+<div class=""field field--name-field-media-un-kaltura field--type-un-kaltura field--label-visually_hidden"">
+      <div class=""field__label visually-hidden"">Kaltura</div>
+    <div class=""field__items"">
+                  <div class=""field__item ratio ratio-16x9"">
+                    <img alt=""General Assembly Media Stakeout: UN Secretary-General António Guterres"" src=""https://www.un.org/sg/sites/default/files/scald_kaltura/fwUlh-_ME-eyGilTmZrxgVvdXP4unFZOLgfhzcQDXMI.jpg"" tabindex=""0"" />
+           
+        </div>
+            </div>
+</div>
+
+  </div>
+
+</div>
+      </div>
+</div>"
+https://www.un.org/sg/en/rss.xml,Launch of “Our Common Agenda”,https://www.un.org/sg/en/node/401822,2025-11-29T15:31:24+00:00,"<span class=""field field--name-title field--type-string field--label-hidden"">Launch of “Our Common Agenda”</span>
+
+<div class=""field field--name-field-date-range field--type-daterange field--label-above"">
+      <div class=""field__label"">Timeline date</div>
+    <div class=""field__items"">
+          <div class=""field__item""><time class=""datetime"" datetime=""2021-09-10T12:00:00Z"">10 September, 2021</time>
+</div>
+      </div>
+</div>
+<span class=""field field--name-uid field--type-entity-reference field--label-hidden""><span>Robert Neshovski</span></span>
+<span class=""field field--name-created field--type-created field--label-hidden""><time class=""datetime"" datetime=""2025-11-29T10:31:24-05:00"" title=""Saturday, 29 November, 2025 - 10:31"">11/29/2025 - 10:31</time>
+</span>
+
+<div class=""clearfix text-formatted field field--name-body field--type-text-with-summary field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><p>SG presents a major visioning report for the future of multilateralism, digital cooperation, climate, and peace.</p></div>
+      </div>
+</div>
+
+
+
+<div class=""field field--name-field-link field--type-link field--label-above"">
+      <div class=""field__label"">Link</div>
+    <div class=""field__items"">
+                      
+                                            
+                                                                                                      
+                                      
+      <div class=""field__item""><a href=""https://www.un.org/en/common-agenda"">Learn more...</a></div>
+      </div>
+</div>
+
+
+<div class=""field field--name-field-section field--type-entity-reference field--label-inline"">
+      <div class=""field__label"">by</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/section/antonio-guterres"" hreflang=""en"">António Guterres</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-tags field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Tags</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/tags/sg-tenure"" hreflang=""en"">sg-tenure</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-type field--type-list-string field--label-above"">
+      <div class=""field__label"">Timeline Type</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Slide</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-background field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Background</div>
+    <div class=""field__items"">
+          <div class=""field__item""><div>
+        
+  
+      
+  
+    
+<div class=""field field--name-field-media-image field--type-image field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">    
+                  <source height=""320"" media=""all and (min-width: 1392px)"" type=""image/png"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 1016px)"" type=""image/png"" width=""480"" />
+              <source height=""136"" media=""all and (min-width: 768px)"" type=""image/png"" width=""343"" />
+              <source height=""136"" media=""all and (min-width: 576px)"" type=""image/png"" width=""343"" />
+              <source height=""136"" type=""image/png"" width=""343"" />
+                  <img alt=""common agenda"" height=""136"" src=""https://www.un.org/sg/sites/default/files/styles/medium_2x/public/2023-10/common_agenda_en.png?itok=It8JC7o_"" width=""343"" />
+
+  
+
+</div>
+      </div>
+</div>
+
+
+              </div></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-media field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Media</div>
+    <div class=""field__items"">
+          <div class=""field__item""><div>
+        
+  
+      
+  
+    
+<div class=""field field--name-field-media-image field--type-image field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">    
+                  <source height=""320"" media=""all and (min-width: 1392px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 1016px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""136"" media=""all and (min-width: 768px)"" type=""image/jpeg"" width=""389"" />
+              <source height=""136"" media=""all and (min-width: 576px)"" type=""image/jpeg"" width=""389"" />
+              <source height=""136"" type=""image/jpeg"" width=""389"" />
+                  <img alt=""Common Agenda FR"" height=""136"" src=""https://www.un.org/sg/sites/default/files/styles/medium_2x/public/images/slider/English/16-11-2021-UN-Photo-UN7917419-Guterres-1150.jpg?itok=Hi_QzUOJ"" width=""389"" />
+
+  
+
+</div>
+      </div>
+</div>
+
+
+              </div></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-background-color field--type-entity-reference field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><div class=""taxonomy-term vocabulary-colorpalette-colors"" id=""taxonomy-term-16675"">
+  
+      <h2><a href=""https://www.un.org/sg/en/colors/darker-blue"">
+<div class=""field field--name-name field--type-string field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">Darker Blue</div>
+      </div>
+</div>
+</a></h2>
+    
+  <div class=""content"">
+    
+<div class=""field field--name-field-colorpalette-hexcode field--type-string field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">#1c4969</div>
+      </div>
+</div>
+
+  </div>
+</div>
+</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-group field--type-string field--label-above"">
+      <div class=""field__label"">Timeline Group</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Out Common Agenda</div>
+      </div>
+</div>"
+https://www.un.org/sg/en/rss.xml,Climate Action – Climate Emergency,https://www.un.org/sg/en/node/401821,2025-11-29T15:25:36+00:00,"<span class=""field field--name-title field--type-string field--label-hidden"">Climate Action – Climate Emergency</span>
+
+<div class=""field field--name-field-date-range field--type-daterange field--label-above"">
+      <div class=""field__label"">Timeline date</div>
+    <div class=""field__items"">
+          <div class=""field__item""><time class=""datetime"" datetime=""2019-10-01T12:00:00Z"">1 October, 2019</time>
+</div>
+      </div>
+</div>
+<span class=""field field--name-uid field--type-entity-reference field--label-hidden""><span>Robert Neshovski</span></span>
+<span class=""field field--name-created field--type-created field--label-hidden""><time class=""datetime"" datetime=""2025-11-29T10:25:36-05:00"" title=""Saturday, 29 November, 2025 - 10:25"">11/29/2025 - 10:25</time>
+</span>
+
+<div class=""clearfix text-formatted field field--name-body field--type-text-with-summary field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><p>SG convenes the UN Climate Action Summit, stressing “the climate emergency.”</p></div>
+      </div>
+</div>
+
+
+
+<div class=""field field--name-field-section field--type-entity-reference field--label-inline"">
+      <div class=""field__label"">by</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/section/antonio-guterres"" hreflang=""en"">António Guterres</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-tags field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Tags</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/tags/sg-tenure"" hreflang=""en"">sg-tenure</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-type field--type-list-string field--label-above"">
+      <div class=""field__label"">Timeline Type</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Slide</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-media field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Media</div>
+    <div class=""field__items"">
+          <div class=""field__item""><div class=""media media--tweet"">
+      <div class=""media media--tweet"">
+      
+<div class=""field field--name-field-media-twitter field--type-string field--label-visually_hidden"">
+      <div class=""field__label visually-hidden"">Tweet URL</div>
+    <div class=""field__items"">
+          <div class=""field__item"">
+</div>
+      </div>
+</div>
+
+    </div>
+  </div>
+  </div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-background-color field--type-entity-reference field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><div class=""taxonomy-term vocabulary-colorpalette-colors"" id=""taxonomy-term-13336"">
+  
+      <h2><a href=""https://www.un.org/sg/en/colors/absolute-black"">
+<div class=""field field--name-name field--type-string field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">Absolute Black</div>
+      </div>
+</div>
+</a></h2>
+    
+  <div class=""content"">
+    
+<div class=""field field--name-field-colorpalette-hexcode field--type-string field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">#000000</div>
+      </div>
+</div>
+
+  </div>
+</div>
+</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-group field--type-string field--label-above"">
+      <div class=""field__label"">Timeline Group</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Climate Action</div>
+      </div>
+</div>"
+https://www.un.org/sg/en/rss.xml,COVID-19 Pandemic Response,https://www.un.org/sg/en/node/401820,2025-11-29T15:24:27+00:00,"<span class=""field field--name-title field--type-string field--label-hidden"">COVID-19 Pandemic Response</span>
+
+<div class=""field field--name-field-date-range field--type-daterange field--label-above"">
+      <div class=""field__label"">Timeline date</div>
+    <div class=""field__items"">
+          <div class=""field__item""><time class=""datetime"" datetime=""2020-03-01T12:00:00Z"">1 March, 2020</time>
+ - <time class=""datetime"" datetime=""2021-12-31T12:00:00Z"">31 December, 2021</time>
+</div>
+      </div>
+</div>
+<span class=""field field--name-uid field--type-entity-reference field--label-hidden""><span>Robert Neshovski</span></span>
+<span class=""field field--name-created field--type-created field--label-hidden""><time class=""datetime"" datetime=""2025-11-29T10:24:27-05:00"" title=""Saturday, 29 November, 2025 - 10:24"">11/29/2025 - 10:24</time>
+</span>
+
+<div class=""clearfix text-formatted field field--name-body field--type-text-with-summary field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><p>SG urges a global ceasefire, equitable vaccine access, and coordinated pandemic recovery.</p></div>
+      </div>
+</div>
+
+
+
+<div class=""field field--name-field-link field--type-link field--label-above"">
+      <div class=""field__label"">Link</div>
+    <div class=""field__items"">
+                      
+                                            
+                                                                                                      
+                                      
+      <div class=""field__item""><a href=""https://www.un.org/en/coronavirus/information-un-system"">Learn more about UN's response...</a></div>
+      </div>
+</div>
+
+
+<div class=""field field--name-field-section field--type-entity-reference field--label-inline"">
+      <div class=""field__label"">by</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/section/antonio-guterres"" hreflang=""en"">António Guterres</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-tags field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Tags</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/tags/sg-tenure"" hreflang=""en"">sg-tenure</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-type field--type-list-string field--label-above"">
+      <div class=""field__label"">Timeline Type</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Slide</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-media field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Media</div>
+    <div class=""field__items"">
+          <div class=""field__item""><div>
+        
+  
+      
+  
+    
+<div class=""field field--name-field-media-image field--type-image field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">    
+                  <source height=""320"" media=""all and (min-width: 1392px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 1016px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" media=""all and (min-width: 768px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" media=""all and (min-width: 576px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" type=""image/jpeg"" width=""480"" />
+                  <img alt=""19-06-2020-Guterres-Covid-19"" height=""316"" src=""https://www.un.org/sg/sites/default/files/styles/medium_2x/public/images/slider/English/19-06-2020-Guterres-Covid-19.jpg?itok=AJk8PlFj"" title=""19-06-2020-Guterres-Covid-19.jpg"" width=""720"" />
+
+  
+
+</div>
+      </div>
+</div>
+
+
+              </div></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-background-color field--type-entity-reference field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><div class=""taxonomy-term vocabulary-colorpalette-colors"" id=""taxonomy-term-16675"">
+  
+      <h2><a href=""https://www.un.org/sg/en/colors/darker-blue"">
+<div class=""field field--name-name field--type-string field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">Darker Blue</div>
+      </div>
+</div>
+</a></h2>
+    
+  <div class=""content"">
+    
+<div class=""field field--name-field-colorpalette-hexcode field--type-string field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">#1c4969</div>
+      </div>
+</div>
+
+  </div>
+</div>
+</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-group field--type-string field--label-above"">
+      <div class=""field__label"">Timeline Group</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Covid-19</div>
+      </div>
+</div>"
+https://www.un.org/sg/en/rss.xml,Climate Action Leadership – First Climate Summit,https://www.un.org/sg/en/node/401819,2025-11-29T15:22:41+00:00,"<span class=""field field--name-title field--type-string field--label-hidden"">Climate Action Leadership – First Climate Summit</span>
+
+<div class=""field field--name-field-date-range field--type-daterange field--label-above"">
+      <div class=""field__label"">Timeline date</div>
+    <div class=""field__items"">
+          <div class=""field__item""><time class=""datetime"" datetime=""2019-09-23T12:00:00Z"">23 September, 2019</time>
+</div>
+      </div>
+</div>
+<span class=""field field--name-uid field--type-entity-reference field--label-hidden""><span>Robert Neshovski</span></span>
+<span class=""field field--name-created field--type-created field--label-hidden""><time class=""datetime"" datetime=""2025-11-29T10:22:41-05:00"" title=""Saturday, 29 November, 2025 - 10:22"">11/29/2025 - 10:22</time>
+</span>
+
+<div class=""clearfix text-formatted field field--name-body field--type-text-with-summary field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item""><p>SG convenes the UN Climate Action Summit, stressing “the climate emergency.”</p></div>
+      </div>
+</div>
+
+
+
+<div class=""field field--name-field-section field--type-entity-reference field--label-inline"">
+      <div class=""field__label"">by</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/section/antonio-guterres"" hreflang=""en"">António Guterres</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-tags field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Tags</div>
+    <div class=""field__items"">
+          <div class=""field__item""><a href=""https://www.un.org/sg/en/tags/sg-tenure"" hreflang=""en"">sg-tenure</a></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-type field--type-list-string field--label-above"">
+      <div class=""field__label"">Timeline Type</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Slide</div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-media field--type-entity-reference field--label-above"">
+      <div class=""field__label"">Timeline Media</div>
+    <div class=""field__items"">
+          <div class=""field__item""><div>
+        
+  
+      
+  
+    
+<div class=""field field--name-field-media-image field--type-image field--label-hidden"">
+    <div class=""field__items"">
+          <div class=""field__item"">    
+                  <source height=""320"" media=""all and (min-width: 1392px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""320"" media=""all and (min-width: 1016px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" media=""all and (min-width: 768px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" media=""all and (min-width: 576px)"" type=""image/jpeg"" width=""480"" />
+              <source height=""211"" type=""image/jpeg"" width=""480"" />
+                  <img alt=""16-02-2020_SG-Pakistan-Climate"" height=""316"" src=""https://www.un.org/sg/sites/default/files/styles/medium_2x/public/images/slider/English/16-02-2020_SG-Pakistan-Climate.jpg?itok=8LgI1jSZ"" title=""16-02-2020_SG-Pakistan-Climate.jpg"" width=""720"" />
+
+  
+
+</div>
+      </div>
+</div>
+
+
+              </div></div>
+      </div>
+</div>
+
+<div class=""field field--name-field-timeline-group field--type-string field--label-above"">
+      <div class=""field__label"">Timeline Group</div>
+    <div class=""field__items"">
+          <div class=""field__item"">Climate Action</div>
+      </div>
+</div>"
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Living in Japan,https://www.gov.uk/guidance/living-in-japan,2026-02-20T14:46:12+00:00,"Information about moving to, living or retiring in Japan – including visas, working, healthcare and driving."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Jordan travel advice,https://www.gov.uk/foreign-travel-advice/jordan,2026-02-20T14:17:23+00:00,"FCDO travel advice for Jordan. Includes safety and security, insurance, entry requirements and legal differences."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Nigeria travel advice,https://www.gov.uk/foreign-travel-advice/nigeria,2026-02-20T12:07:01+00:00,"FCDO travel advice for Nigeria. Includes safety and security, insurance, entry requirements and legal differences."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Philippines travel advice,https://www.gov.uk/foreign-travel-advice/philippines,2026-02-20T11:26:45+00:00,"FCDO travel advice for the Philippines. Includes safety and security, insurance, entry requirements and legal differences."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,When someone dies in Croatia,https://www.gov.uk/guidance/when-someone-dies-in-croatia,2026-02-20T08:28:14+00:00,"The process when a British national dies in Croatia, including registering the death, funerals and cremations, and bringing the person’s body to the UK."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Cuba travel advice,https://www.gov.uk/foreign-travel-advice/cuba,2026-02-19T19:12:53+00:00,"FCDO travel advice for Cuba. Includes safety and security, insurance, entry requirements and legal differences."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Let this be the time that the world comes together to end the cycle of bloodshed in Sudan: UK Statement at the UN Security Council,https://www.gov.uk/government/speeches/let-this-be-the-time-that-the-world-comes-together-to-end-the-cycle-of-bloodshed-in-sudan-uk-statement-at-the-un-security-council,2026-02-19T18:52:00+00:00,"Statement by The Rt Hon Yvette Cooper, Secretary of State for Foreign, Commonwealth and Development Affairs, at the UN Security Council meeting on Sudan."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Joint Ministerial Statement on Protection of Civilians and Humanitarian Operations in Sudan,https://www.gov.uk/government/news/joint-ministerial-statement-on-protection-of-civilians-and-humanitarian-operations-in-sudan,2026-02-19T16:33:25+00:00,Joint Ministerial Statement from the UK and partners on the Protection of Civilians and Humanitarian Operations in Sudan
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Corporate report: Commonwealth Scholarship Commission Strategy 2025 to 2028,https://www.gov.uk/government/publications/commonwealth-scholarship-commission-strategy-2025-to-2028,2026-02-19T16:00:04+00:00,"The 2025 to 2028 Strategy outlines how Commonwealth Scholarships drive global development, strengthen UK partnerships, widen access, and empower a thriving alumni network."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Sri Lanka travel advice,https://www.gov.uk/foreign-travel-advice/sri-lanka,2026-02-19T15:00:19+00:00,"FCDO travel advice for Sri Lanka. Includes safety and security, insurance, entry requirements and legal differences."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Portugal travel advice,https://www.gov.uk/foreign-travel-advice/portugal,2026-02-19T14:01:39+00:00,"FCDO travel advice for Portugal. Includes safety and security, insurance, entry requirements and legal differences."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Counter-terrorism: list of designations and sanctions notices,https://www.gov.uk/guidance/counter-terrorism-list-of-designations-and-sanctions-notices,2026-02-19T12:58:02+00:00,"List of designated persons and notices issued about new designations, revocations, delistings and other changes to the UK Sanctions List."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Policy paper: UK National Action Plan for Open Government 2024 to 2025: Final commitment updates,https://www.gov.uk/government/publications/uk-national-action-plan-for-open-government-2024-to-2025-final-commitment-updates,2026-02-19T12:16:31+00:00,The UK's Sixth National Action Plan for Open Government 2024 to2025 (NAP6) was published on 18th December 2023.
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Transparency data: Honorary British awards to foreign nationals 2025,https://www.gov.uk/government/publications/honorary-british-awards-to-foreign-nationals-2025,2026-02-19T12:00:02+00:00,This page lists the Honorary British awards for foreign nationals that His Majesty The King approved during 2025.
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Kenya travel advice,https://www.gov.uk/foreign-travel-advice/kenya,2026-02-19T11:49:16+00:00,"FCDO travel advice for Kenya. Includes safety and security, insurance, entry requirements and legal differences."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Foreign Secretary's statement on the UN Fact Finding Mission Report on El Fasher,https://www.gov.uk/government/news/foreign-secretarys-statement-on-the-un-fact-finding-mission-report-on-el-fasher,2026-02-19T07:30:00+00:00,"Statement by Yvette Cooper, Secretary of State for Foreign, Commonwealth and Development Affairs, on the UN fact finding mission report on El Fasher."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Foreign Secretary’s statement on the situation in the Middle East: UK Statement at the UN Security Council,https://www.gov.uk/government/speeches/a-two-state-solution-can-be-the-gateway-to-transform-the-region-with-normalisation-regional-integration-and-peaceful-coexistence-uk-statement-at-th,2026-02-18T22:51:00+00:00,"Statement by The Rt Hon Yvette Cooper, Secretary of State for Foreign, Commonwealth and Development Affairs, at the UN Security Council meeting on The Middle East."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,The UK reiterates its strong support for UNSMIL in advancing an inclusive political process in Libya: UK statement at the UN Security Council,https://www.gov.uk/government/speeches/the-uk-reiterates-its-strong-support-for-unsmil-in-advancing-an-inclusive-political-process-in-libya-uk-statement-at-the-un-security-council,2026-02-18T17:04:00+00:00,"Statement by Ambassador Archie Young, UK Deputy Permanent Representative to the UN, at the UN Security Council meeting on Libya."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Living in Singapore,https://www.gov.uk/guidance/living-in-singapore,2026-02-18T15:49:12+00:00,"Information about moving to, living or retiring in Singapore – including visas, working, healthcare and driving."
+https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom,Russia must engage in credible risk management to prevent miscalculations: UK statement to the OSCE,https://www.gov.uk/government/speeches/russia-must-engage-in-credible-risk-management-to-prevent-miscalculations-uk-statement-to-the-osce,2026-02-18T14:03:00+00:00,"Politico-Military Counsellor, Ankur Narayan, recalls Russia’s pattern of reassurance without transparency and refusal to engage OSCE risk‑reduction mechanisms before its full‑scale invasion of Ukraine - and calls on Russia to explain what practical steps it is now prepared to take to reduce escalation risks and prevent miscalculation."

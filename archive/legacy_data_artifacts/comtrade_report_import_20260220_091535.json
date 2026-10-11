@@ -1,0 +1,14 @@
+{
+  "generated_at_utc": "2026-02-20T09:15:35.769043+00:00",
+  "tag": "import",
+  "rows": 4,
+  "years": [
+    52
+  ],
+  "estimated_or_unreported_share": 0.0,
+  "outputs": {
+    "rows_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\processed\\comtrade_rows_import_20260220_091535.csv",
+    "yearly_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\processed\\comtrade_yearly_import_20260220_091535.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\comtrade_report_import_20260220_091535.json"
+  }
+}

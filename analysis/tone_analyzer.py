@@ -1,7 +1,9 @@
-"""Sentiment polarity + urgency scoring for diplomatic text.
+"""[DEPRECATED FOR THESIS SCOPE / HEURISTIC BASELINE ONLY]
+Sentiment polarity + urgency scoring for diplomatic text.
 
-This is a heuristic module (pre-RAG). For better behavior on non-consumer text,
-polarity uses NLTK VADER when available, with TextBlob kept as a fallback.
+This is a legacy heuristic module (pre-RAG baseline). For academic research,
+off-the-shelf sentiment/urgency on diplomatic communiques is replaced by
+grounded semantic retrieval, temporal topic modeling, and RAG evaluation.
 """
 
 import pandas as pd

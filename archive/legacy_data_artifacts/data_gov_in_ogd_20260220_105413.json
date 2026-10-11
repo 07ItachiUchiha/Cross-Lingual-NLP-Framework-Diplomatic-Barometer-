@@ -1,0 +1,11 @@
+{
+  "generated_at_utc": "2026-02-20T10:54:13.214694+00:00",
+  "resource_id": "14613c4e-5ab0-4705-b440-e4e49ae345de",
+  "base_url": "https://api.data.gov.in/resource/14613c4e-5ab0-4705-b440-e4e49ae345de",
+  "rows": 5,
+  "reported_total": 5,
+  "outputs": {
+    "records_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\data_gov_in_ogd_20260220_105413.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\data_gov_in_ogd_20260220_105413.json"
+  }
+}

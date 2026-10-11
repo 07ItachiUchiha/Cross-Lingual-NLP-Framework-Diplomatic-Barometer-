@@ -1,0 +1,38 @@
+{
+  "run_started_utc": "2026-02-20T06:25:43.024289+00:00",
+  "run_finished_utc": "2026-02-20T06:26:10.885377+00:00",
+  "query": "India Japan",
+  "built_query": {
+    "plain": "India Japan geopolitics diplomacy treaty bilateral summit India Japan",
+    "boolean": "(India Japan) AND (geopolitics OR diplomacy OR treaty OR bilateral OR summit) AND (India OR Japan)"
+  },
+  "language": "en",
+  "timeframe_hours": 48,
+  "max_per_provider": 5,
+  "provider_counts": {
+    "newsdata": 0,
+    "newsapi": 0,
+    "worldnews": 0,
+    "gdelt": 0
+  },
+  "provider_status": {
+    "newsdata": {
+      "returned": 0,
+      "error": "http_422"
+    },
+    "newsapi": {
+      "returned": 0,
+      "error": null
+    },
+    "worldnews": {
+      "returned": 0,
+      "error": null
+    },
+    "gdelt": {
+      "returned": 0,
+      "error": "HTTPSConnectionPool(host='api.gdeltproject.org', port=443): Max retries exceeded with url: /api/v2/doc/doc?query=%28India+Japan%29+AND+%28geopolitics+OR+diplomacy+OR+treaty+OR+bilateral+OR+summit%29+AND+%28India+OR+Japan%29&mode=artlist&format=json&maxrecords=5&timespan=1week&sort=datedesc (Caused by ConnectTimeoutError(<HTTPSConnection(host='api.gdeltproject.org', port=443) at 0x17661110>, 'Connection to api.gdeltproject.org timed out. (connect timeout=25)'))"
+    }
+  },
+  "total_items": 0,
+  "outputs": {}
+}

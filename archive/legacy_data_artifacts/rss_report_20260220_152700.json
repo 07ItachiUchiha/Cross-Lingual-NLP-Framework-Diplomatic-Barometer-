@@ -1,0 +1,31 @@
+{
+  "generated_at_utc": "2026-02-20T15:27:00.062058+00:00",
+  "feeds": [
+    "https://data.gov.in/backend/dms/v1/rss.xml",
+    "https://www.mea.gov.in/rss.xml"
+  ],
+  "since_days": 3650,
+  "items": 9,
+  "feed_diagnostics": [
+    {
+      "feed_url": "https://data.gov.in/backend/dms/v1/rss.xml",
+      "requested_url": "https://www.data.gov.in/backend/dms/v1/rss.xml",
+      "final_url": "https://www.data.gov.in/backend/dms/v1/rss.xml",
+      "http_status": 200,
+      "entries_seen": 10,
+      "error": ""
+    },
+    {
+      "feed_url": "https://www.mea.gov.in/rss.xml",
+      "requested_url": "https://www.mea.gov.in/rss.xml",
+      "final_url": "https://www.mea.gov.in/error.htm",
+      "http_status": 200,
+      "entries_seen": 0,
+      "error": "<unknown>:39:34: undefined entity"
+    }
+  ],
+  "outputs": {
+    "items_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\rss_items_20260220_152700.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\rss_report_20260220_152700.json"
+  }
+}

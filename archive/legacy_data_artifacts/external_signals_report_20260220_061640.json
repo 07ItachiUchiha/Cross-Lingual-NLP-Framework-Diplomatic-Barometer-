@@ -1,0 +1,16 @@
+{
+  "run_started_utc": "2026-02-20T06:16:00.800615+00:00",
+  "run_finished_utc": "2026-02-20T06:16:40.362236+00:00",
+  "query": "India Japan joint statement",
+  "language": "en",
+  "timeframe_hours": 48,
+  "max_per_provider": 5,
+  "provider_counts": {
+    "newsapi": 5,
+    "worldnews": 5
+  },
+  "total_items": 10,
+  "outputs": {
+    "signals_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\external_signals_20260220_061640.csv"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "generated_at_utc": "2026-02-20T15:47:38.868160+00:00",
+  "input": "data\\raw\\rss_items_20260220_154726.csv",
+  "items": 39,
+  "year_span": [
+    2016,
+    2026
+  ],
+  "outputs": {
+    "by_year_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\rss_counts_by_year_20260220_154738.csv",
+    "by_month_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\rss_counts_by_month_20260220_154738.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\rss_summary_report_20260220_154738.json"
+  }
+}

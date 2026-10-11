@@ -310,8 +310,9 @@ class Preprocessor:
         
         processed_df = pd.DataFrame(processed_data)
         
-        # Combine with original dataframe
-        result = pd.concat([df.reset_index(drop=True), processed_df], axis=1)
+        # Combine with original dataframe, avoiding duplicate columns
+        cols_to_keep = [c for c in df.columns if c not in processed_df.columns]
+        result = pd.concat([df[cols_to_keep].reset_index(drop=True), processed_df], axis=1)
         
         return result
 

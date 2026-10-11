@@ -1,0 +1,15 @@
+{
+  "generated_at_utc": "2026-02-20T10:53:19.668702+00:00",
+  "tag": "api",
+  "rows": 2,
+  "years": [
+    2023,
+    2024
+  ],
+  "estimated_or_unreported_share": 1.0,
+  "outputs": {
+    "rows_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\processed\\comtrade_rows_api_20260220_105319.csv",
+    "yearly_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\processed\\comtrade_yearly_api_20260220_105319.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\comtrade_report_api_20260220_105319.json"
+  }
+}

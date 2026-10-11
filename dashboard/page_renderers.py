@@ -166,19 +166,14 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
     render_top_takeaways = ctx["render_top_takeaways"]
     summarize_issue_counts = ctx["summarize_issue_counts"]
     summarize_equity_dimensions = ctx["summarize_equity_dimensions"]
-    render_external_status_metrics = ctx["render_external_status_metrics"]
-    build_live_geopolitical_pulse = ctx["build_live_geopolitical_pulse"]
     render_data_basis_caption = ctx["render_data_basis_caption"]
     build_claim_traceability = ctx["build_claim_traceability"]
-    triggers_to_dataframe = ctx["triggers_to_dataframe"]
     build_overview_verdicts = ctx["build_overview_verdicts"]
-    perform_quality_audit = ctx["perform_quality_audit"]
-    build_pilot_pack = ctx["build_pilot_pack"]
     render_page_exports = ctx["render_page_exports"]
 
     st.header(f"{country1_name}-{country2_name} Diplomatic Overview")
     render_page_scaffold(
-        question=f"What are the highest-confidence diplomatic decisions for {country1_name}-{country2_name} this month?",
+        question=f"How do official bilateral communications evolve across economic and security dimensions for {country1_name}–{country2_name} over time?",
         run_meta=run_meta,
         exploratory_mode=exploratory_mode,
     )
@@ -196,7 +191,7 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
     elif role_profile == "Diplomat":
         st.info("Priority: focus on contradiction scan, source profiles, and year-to-year narrative shifts.")
     else:
-        st.info("Priority: focus on policy triggers, decision option cards, and confidence-weighted interpretation.")
+        st.info("Priority: focus on empirical evidence, statistical significance, and longitudinal consistency.")
 
     overview_bundle = get_analysis_bundle(include_tone_theme=True)
     overview_report = overview_bundle.get("report", {})
@@ -210,155 +205,25 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
     overview_trigger_rows = overview_bundle.get("trigger_rows", [])
     overview_decision_options_df = overview_bundle.get("decision_options_df", pd.DataFrame())
 
-    st.markdown("#### Action")
-    st.subheader("Top 3 decisions this month")
-    if isinstance(overview_decision_options_df, pd.DataFrame) and len(overview_decision_options_df) > 0:
-        top3 = overview_decision_options_df.head(3)
-        for _, row in top3.iterrows():
-            st.info(
-                f"**{row.get('option', 'Option')}** — {row.get('recommended_action', 'No action provided')} "
-                f"(Risk: {row.get('risk_level', 'Unknown')}; Evidence: {row.get('evidence_anchor', 'n/a')})"
-            )
-    else:
-        st.info("No decision options available for current filter window.")
-
-    render_top_takeaways(
-        role_profile=role_profile,
-        page_key="overview",
-        context={
-            "docs": len(processed_df),
-            "years": processed_df["year"].nunique() if "year" in processed_df.columns else 0,
-            "confidence_label": overview_confidence.get("label", "Unknown"),
-            "trend": overview_report.get("trend", "Unknown"),
-            "top_issue": "n/a",
-        },
-    )
-
-    if role_profile == "NGO":
-        st.markdown("#### NGO Impact Summary")
-        ngo_issue_counts = summarize_issue_counts(processed_df)
-        ngo_region_eq, ngo_group_eq = summarize_equity_dimensions(processed_df)
-        top_issue = (
-            str(ngo_issue_counts.sort_values("documents", ascending=False).iloc[0]["issue"])
-            if isinstance(ngo_issue_counts, pd.DataFrame) and len(ngo_issue_counts) > 0 and "issue" in ngo_issue_counts.columns
-            else "No dominant issue"
-        )
-        top_region = (
-            str(ngo_region_eq.sort_values("documents", ascending=False).iloc[0]["equity_dimension"])
-            if isinstance(ngo_region_eq, pd.DataFrame) and len(ngo_region_eq) > 0 and "equity_dimension" in ngo_region_eq.columns
-            else "No region signal"
-        )
-        top_group = (
-            str(ngo_group_eq.sort_values("documents", ascending=False).iloc[0]["equity_dimension"])
-            if isinstance(ngo_group_eq, pd.DataFrame) and len(ngo_group_eq) > 0 and "equity_dimension" in ngo_group_eq.columns
-            else "No community signal"
-        )
-        st.info(
-            f"Who/Where affected: region focus = {top_region}; community focus = {top_group}. "
-            f"Trend direction: {overview_report.get('trend', 'Unknown')}. "
-            f"Dominant issue area: {top_issue}."
-        )
-
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric(lang["total_documents"], len(processed_df))
     with col2:
-        total_words = processed_df['cleaned'].apply(lambda x: len(str(x).split())).sum()
+        total_words = processed_df['cleaned'].apply(lambda x: len(str(x).split())).sum() if 'cleaned' in processed_df.columns else 0
         st.metric(lang["total_words"], f"{total_words:,}")
     with col3:
-        most_active_year = processed_df['year'].mode()[0]
+        modes = processed_df['year'].mode() if 'year' in processed_df.columns else []
+        most_active_year = str(modes.iloc[0]) if len(modes) > 0 else "n/a"
         st.metric("Most Active Year", most_active_year)
     with col4:
-        year_count = len(processed_df['year'].unique())
+        year_count = int(processed_df['year'].nunique()) if 'year' in processed_df.columns else 0
         st.metric("Years Covered", year_count)
 
-    st.subheader("External Integration Status")
-    render_external_status_metrics(external_ctx)
-
-    with st.expander("External source details", expanded=False):
-        detail_rows = []
-        for key, label in [
-            ("comtrade_yearly", "Comtrade"),
-            ("estat_rows", "e-Stat"),
-            ("ogd_rows", "OGD India"),
-            ("rss_year", "RSS"),
-            ("external_signals", "External Signals"),
-        ]:
-            item = external_ctx.get(key, {})
-            detail_rows.append({
-                "source": label,
-                "rows": item.get("rows", 0),
-                "latest_file": item.get("file_name", ""),
-                "status": "Loaded" if item.get("available") else "Not available",
-            })
-        st.dataframe(pd.DataFrame(detail_rows), width='stretch', hide_index=True)
-
-        rss_report_info = external_ctx.get("rss_report", {})
-        rss_payload = rss_report_info.get("data", {}) if isinstance(rss_report_info, dict) else {}
-        diagnostics = rss_payload.get("feed_diagnostics", []) if isinstance(rss_payload, dict) else []
-        if diagnostics:
-            diag_rows = []
-            for item in diagnostics:
-                diag_rows.append(
-                    {
-                        "feed_url": item.get("feed_url", ""),
-                        "http_status": item.get("http_status", ""),
-                        "entries_seen": item.get("entries_seen", 0),
-                        "error": str(item.get("error", ""))[:180],
-                        "final_url": item.get("final_url", ""),
-                    }
-                )
-            st.caption("RSS feed diagnostics (latest run)")
-            st.dataframe(pd.DataFrame(diag_rows), width='stretch', hide_index=True)
-
-    st.subheader("Live Geopolitical Pulse")
-    pulse = build_live_geopolitical_pulse(external_ctx)
-    if pulse.get("available"):
-        p1, p2, p3, p4 = st.columns(4)
-        with p1:
-            st.metric("Events (24h)", int(pulse.get("count_24h", 0)))
-        with p2:
-            st.metric("Events (7d)", int(pulse.get("count_7d", 0)))
-        with p3:
-            st.metric("Providers (7d)", int(pulse.get("providers", 0)))
-        with p4:
-            st.metric("Pulse Confidence", f"{pulse.get('confidence_label', 'Low')} ({pulse.get('confidence_score', 0):.1f}/100)", delta=pulse.get("momentum_label", "Stable"))
-
-        vc1, vc2 = st.columns(2)
-        with vc1:
-            daily_counts = pulse.get("daily_counts_7d", [])
-            if daily_counts:
-                daily_df = pd.DataFrame(daily_counts)
-                fig_daily = px.line(daily_df, x="date", y="count", markers=True, title="7-Day Activity Trend")
-                st.plotly_chart(fig_daily, width='stretch')
-                render_data_basis_caption(run_meta, "Live pulse trend", point_count=len(daily_df))
-
-        with vc2:
-            recency_split = pulse.get("recency_split", {})
-            if isinstance(recency_split, dict) and recency_split:
-                recency_df = pd.DataFrame(
-                    [
-                        {"window": "Last 24h", "count": int(recency_split.get("last_24h", 0))},
-                        {"window": "Prior 6d", "count": int(recency_split.get("prior_6d", 0))},
-                    ]
-                )
-                st.caption("Recency mix (7d)")
-                st.dataframe(recency_df, width='stretch', hide_index=True)
-
-        provider_counts = pulse.get("provider_counts", {})
-        if isinstance(provider_counts, dict) and provider_counts:
-            providers_df = pd.DataFrame(list(provider_counts.items()), columns=["provider", "count"]).sort_values("count", ascending=False)
-            st.caption("Provider distribution (7d)")
-            st.dataframe(providers_df, width='stretch', hide_index=True)
-
-        top_events = pulse.get("top_events", [])
-        if top_events:
-            with st.expander("Top events (latest 7d)", expanded=False):
-                st.dataframe(pd.DataFrame(top_events), width='stretch', hide_index=True)
-    else:
-        st.info("Live geopolitical pulse unavailable (external signals not loaded).")
-
-    st.markdown("---")
+    # Clean ministry distribution display
+    if "source" in processed_df.columns:
+        source_counts = processed_df["source"].value_counts().to_dict()
+        source_parts = [f"**{src}**: {cnt} docs ({cnt/max(1, len(processed_df)):.1%})" for src, cnt in source_counts.items()]
+        st.markdown(f"**Ministry Distribution:** {' | '.join(source_parts)}")
 
     if "doc_type" in processed_df.columns:
         with st.expander("Document types", expanded=False):
@@ -380,10 +245,6 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
     contradiction_df = overview_contradiction_df
     tone_df = overview_bundle.get("tone_df", pd.DataFrame())
     thematic_analysis = overview_bundle.get("thematic_analysis", {})
-
-    trigger_df = triggers_to_dataframe(overview_trigger_rows)
-    decision_options_df = overview_decision_options_df
-
     hygiene = _build_dashboard_decision_hygiene(processed_df, scored_df, yearly_df, report)
     if hygiene.get("warnings"):
         st.subheader("Decision hygiene (for policy use)")
@@ -563,7 +424,6 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
             {"component": "Source credibility", "score": comp.get("source_credibility", 0.0)},
             {"component": "Temporal coverage", "score": comp.get("temporal_coverage", 0.0)},
             {"component": "Statistical strength", "score": comp.get("statistical_strength", 0.0)},
-            {"component": "External coverage", "score": comp.get("external_coverage", 0.0)},
         ])
         st.dataframe(comp_df, width='stretch', hide_index=True)
 
@@ -606,28 +466,6 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
         else:
             st.info("No potential contradictions detected in current corpus.")
 
-    st.markdown("### Policy Trigger Alerts")
-    if isinstance(trigger_df, pd.DataFrame) and len(trigger_df) > 0:
-        for _, row in trigger_df.iterrows():
-            sev = str(row.get("severity", "Info")).lower()
-            msg = f"{row.get('trigger', '')}: {row.get('condition', '')}"
-            action = f"Action: {row.get('policy_action', '')}"
-            if sev == "high":
-                st.error(f"{msg} — {action}")
-            elif sev == "medium":
-                st.warning(f"{msg} — {action}")
-            else:
-                st.info(f"{msg} — {action}")
-
-        with st.expander("Policy trigger table", expanded=False):
-            st.dataframe(trigger_df, width='stretch', hide_index=True)
-            st.download_button(
-                label="Download policy triggers (CSV)",
-                data=trigger_df.to_csv(index=False, encoding="utf-8").encode("utf-8"),
-                file_name=f"policy_triggers_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-            )
-
     st.markdown("### Unified Verdict (all major sections)")
     verdict_rows = build_overview_verdicts(
         processed_df=processed_df,
@@ -643,133 +481,6 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
         contradiction_df=contradiction_df,
     )
     st.dataframe(pd.DataFrame(verdict_rows), width='stretch', hide_index=True)
-
-    st.markdown("### Decision Option Cards")
-    if isinstance(decision_options_df, pd.DataFrame) and len(decision_options_df) > 0:
-        for _, opt in decision_options_df.iterrows():
-            risk = str(opt.get("risk_level", "Info"))
-            card_text = (
-                f"**{opt.get('option', '')}**\n\n"
-                f"When to use: {opt.get('when_to_use', '')}\n\n"
-                f"Action: {opt.get('recommended_action', '')}\n\n"
-                f"Evidence: {opt.get('evidence_anchor', '')}"
-            )
-            if risk.lower() == "high":
-                st.error(card_text)
-            elif risk.lower() == "medium":
-                st.warning(card_text)
-            else:
-                st.info(card_text)
-
-        with st.expander("Decision options table", expanded=False):
-            st.dataframe(decision_options_df, width='stretch', hide_index=True)
-            st.download_button(
-                label="Download decision options (CSV)",
-                data=decision_options_df.to_csv(index=False, encoding="utf-8").encode("utf-8"),
-                file_name=f"decision_options_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-            )
-
-    st.markdown("### Quarterly Quality Audit")
-    q_summary_df = overview_bundle.get("q_summary_df", pd.DataFrame())
-    q_issue_df = overview_bundle.get("q_issue_df", pd.DataFrame())
-    q_meta = overview_bundle.get("q_meta", {})
-    _, _, q_meta_full = perform_quality_audit(baseline_processed_df)
-
-    qa_col1, qa_col2, qa_col3, qa_col4 = st.columns(4)
-    with qa_col1:
-        st.metric("Audit Score", f"{q_meta.get('audit_score', 0):.1f}/100")
-    with qa_col2:
-        st.metric("Audit Status", str(q_meta.get("status", "Unknown")))
-    with qa_col3:
-        st.metric("Quarters", int(q_meta.get("quarters_analyzed", 0)))
-    with qa_col4:
-        st.metric("Issues", int(q_meta.get("issues_count", 0)))
-
-    st.caption(
-        "Audit metrics above use the current filtered dataset "
-        f"({len(processed_df)} docs). Full-corpus reference: "
-        f"{q_meta_full.get('audit_score', 0):.1f}/100, "
-        f"{q_meta_full.get('status', 'Unknown')} "
-        f"across {q_meta_full.get('quarters_analyzed', 0)} quarters."
-    )
-
-    if isinstance(q_issue_df, pd.DataFrame) and len(q_issue_df) > 0:
-        high_count = int((q_issue_df["severity"].astype(str).str.lower() == "high").sum())
-        med_count = int((q_issue_df["severity"].astype(str).str.lower() == "medium").sum())
-        low_count = int((q_issue_df["severity"].astype(str).str.lower() == "low").sum())
-        if high_count > 0:
-            st.error(f"Quality audit alerts: {high_count} high, {med_count} medium, {low_count} low.")
-        elif med_count > 0:
-            st.warning(f"Quality audit alerts: {high_count} high, {med_count} medium, {low_count} low.")
-        else:
-            st.info(f"Quality audit alerts: {high_count} high, {med_count} medium, {low_count} low.")
-
-        with st.expander("Quarterly quality issues", expanded=False):
-            st.dataframe(q_issue_df, width='stretch', hide_index=True)
-    else:
-        st.info("No quarterly quality issues detected.")
-
-    with st.expander("Quarterly quality summary", expanded=False):
-        if isinstance(q_summary_df, pd.DataFrame) and len(q_summary_df) > 0:
-            st.dataframe(q_summary_df, width='stretch', hide_index=True)
-            q_fig_docs = px.bar(q_summary_df, x="quarter", y="documents", title="Documents by quarter")
-            st.plotly_chart(q_fig_docs, width='stretch')
-            q_fig_url = px.line(q_summary_df, x="quarter", y="missing_url_pct", markers=True, title="Missing URL % by quarter")
-            st.plotly_chart(q_fig_url, width='stretch')
-
-            st.download_button(
-                label="Download quarterly audit summary (CSV)",
-                data=q_summary_df.to_csv(index=False, encoding="utf-8").encode("utf-8"),
-                file_name=f"quarterly_quality_summary_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-            )
-            if isinstance(q_issue_df, pd.DataFrame) and len(q_issue_df) > 0:
-                st.download_button(
-                    label="Download quarterly audit issues (CSV)",
-                    data=q_issue_df.to_csv(index=False, encoding="utf-8").encode("utf-8"),
-                    file_name=f"quarterly_quality_issues_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv",
-                    mime="text/csv",
-                )
-        else:
-            st.info("Quarterly summary unavailable for current filtered data.")
-
-    st.markdown("### Pilot Validation Readiness")
-    pilot_checklist_df, pilot_log_template_df, pilot_meta = build_pilot_pack(
-        processed_df=processed_df,
-        trigger_df=trigger_df,
-        decision_options_df=decision_options_df,
-        confidence_summary=confidence_summary,
-        quality_meta=q_meta,
-    )
-
-    pcol1, pcol2, pcol3 = st.columns(3)
-    with pcol1:
-        st.metric("Pilot Readiness", pilot_meta.get("readiness_label", "Needs Prep"))
-    with pcol2:
-        st.metric("Readiness Score", f"{pilot_meta.get('readiness_score', 0):.1f}/100")
-    with pcol3:
-        st.metric("Pilot Tasks", len(pilot_checklist_df) if isinstance(pilot_checklist_df, pd.DataFrame) else 0)
-
-    with st.expander("Pilot task checklist", expanded=False):
-        if isinstance(pilot_checklist_df, pd.DataFrame) and len(pilot_checklist_df) > 0:
-            st.dataframe(pilot_checklist_df, width='stretch', hide_index=True)
-            st.download_button(
-                label="Download pilot checklist (CSV)",
-                data=pilot_checklist_df.to_csv(index=False, encoding="utf-8").encode("utf-8"),
-                file_name=f"pilot_checklist_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-            )
-
-    with st.expander("Pilot session log template", expanded=False):
-        if isinstance(pilot_log_template_df, pd.DataFrame) and len(pilot_log_template_df) > 0:
-            st.dataframe(pilot_log_template_df, width='stretch', hide_index=True)
-            st.download_button(
-                label="Download pilot session log template (CSV)",
-                data=pilot_log_template_df.to_csv(index=False, encoding="utf-8").encode("utf-8"),
-                file_name=f"pilot_session_log_template_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-            )
 
     st.markdown("### Issue Landscape")
     issue_counts_view = summarize_issue_counts(processed_df)
@@ -892,9 +603,6 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
         tables={
             "overview_verdicts": pd.DataFrame(verdict_rows),
             "yearly_shift": yearly_df if isinstance(yearly_df, pd.DataFrame) else pd.DataFrame(),
-            "policy_triggers": trigger_df if isinstance(trigger_df, pd.DataFrame) else pd.DataFrame(),
-            "decision_options": decision_options_df if isinstance(decision_options_df, pd.DataFrame) else pd.DataFrame(),
-            "quality_summary": q_summary_df if isinstance(q_summary_df, pd.DataFrame) else pd.DataFrame(),
         },
         run_meta=run_meta,
     )
@@ -922,7 +630,7 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
 
     st.header(f"Statistical Checks")
     render_page_scaffold(
-        question=f"Can current evidence be trusted for policy action, or should it remain exploratory?",
+        question=f"Are observed shifts in diplomatic focus statistically significant across the bilateral corpus?",
         run_meta=run_meta,
         exploratory_mode=exploratory_mode,
     )
@@ -935,7 +643,7 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
     elif role_profile == "Diplomat":
         st.caption("Diplomat view: combine significance signals with contradiction and source-profile context for negotiation posture.")
     else:
-        st.caption("Policy view: use trigger rules + decision options as action layer on top of statistical diagnostics.")
+        st.caption("Research view: evaluate effect sizes, p-values, and source-balance robustness before confirming hypotheses.")
 
     stats_bundle = get_analysis_bundle(include_tone_theme=False)
     report = stats_bundle.get("report", {})
@@ -962,21 +670,6 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
     except Exception:
         year_min, year_max = None, None
 
-    st.subheader("Structured-source context")
-    comtrade_info = external_ctx.get("comtrade_yearly", {})
-    if comtrade_info.get("available"):
-        cdf = comtrade_info.get("data", pd_local.DataFrame()).copy()
-        if "refYear" in cdf.columns:
-            cdf["refYear"] = pd_local.to_numeric(cdf["refYear"], errors="coerce")
-            comtrade_years = sorted([int(y) for y in cdf["refYear"].dropna().unique()])
-            if year_min is not None and year_max is not None:
-                corpus_years = set(range(int(year_min), int(year_max) + 1))
-                overlap = sorted(list(corpus_years.intersection(set(comtrade_years))))
-                st.caption(f"Comtrade years overlap with corpus: {overlap if overlap else 'None'}")
-        st.caption(f"Comtrade source: {comtrade_info.get('file_name', '')}")
-    else:
-        st.caption("Comtrade context unavailable.")
-
     st.subheader("Economic vs. Security Focus Comparison")
 
     stats_result = stats_bundle.get("stats_result", {})
@@ -992,9 +685,6 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
     source_cred_df = stats_bundle.get("source_cred_df", pd_local.DataFrame())
     corpus_credibility_score = float(stats_bundle.get("corpus_credibility_score", 0.0))
     weighted_focus = stats_bundle.get("weighted_focus", {})
-    trigger_df = stats_bundle.get("trigger_df", pd_local.DataFrame())
-    decision_options_df = stats_bundle.get("decision_options_df", pd_local.DataFrame())
-
     st.subheader("Evidence confidence")
     conf_col1, conf_col2 = st.columns([0.35, 0.65])
     with conf_col1:
@@ -1005,8 +695,7 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
         st.caption(
             f"Sample={comp.get('sample_size', 0):.1f}, Sources={comp.get('source_diversity', 0):.1f}, "
             f"Credibility={comp.get('source_credibility', 0):.1f}, "
-            f"Time={comp.get('temporal_coverage', 0):.1f}, Stats={comp.get('statistical_strength', 0):.1f}, "
-            f"External={comp.get('external_coverage', 0):.1f}"
+            f"Time={comp.get('temporal_coverage', 0):.1f}, Stats={comp.get('statistical_strength', 0):.1f}"
         )
         st.caption(
             f"Corpus source credibility (0-1): {corpus_credibility_score:.3f}; "
@@ -1090,37 +779,6 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
         else:
             st.info("No traceability records available.")
 
-    st.subheader("Policy trigger rules")
-    if isinstance(trigger_df, pd_local.DataFrame) and len(trigger_df) > 0:
-        st.dataframe(trigger_df, width='stretch', hide_index=True)
-    else:
-        st.info("No active policy triggers.")
-
-    st.subheader("Decision option cards")
-    if isinstance(decision_options_df, pd_local.DataFrame) and len(decision_options_df) > 0:
-        st.dataframe(decision_options_df, width='stretch', hide_index=True)
-    else:
-        st.info("No decision options available.")
-
-    st.subheader("Quality audit snapshot")
-    q_summary_df = stats_bundle.get("q_summary_df", pd_local.DataFrame())
-    q_issue_df = stats_bundle.get("q_issue_df", pd_local.DataFrame())
-    q_meta = stats_bundle.get("q_meta", {})
-    st.caption(
-        f"Audit score: {q_meta.get('audit_score', 0):.1f}/100 | "
-        f"Status: {q_meta.get('status', 'Unknown')} | "
-        f"Quarters: {q_meta.get('quarters_analyzed', 0)} | "
-        f"Issues: {q_meta.get('issues_count', 0)}"
-    )
-    st.caption(
-        f"Audit confidence: {q_meta.get('confidence_band', 'Unknown')} "
-        f"(avg docs/quarter={q_meta.get('avg_docs_per_quarter', 0):.2f}, median={q_meta.get('median_docs_per_quarter', 0):.1f})"
-    )
-    if isinstance(q_issue_df, pd_local.DataFrame) and len(q_issue_df) > 0:
-        st.dataframe(q_issue_df.head(20), width='stretch', hide_index=True)
-    else:
-        st.info("No audit issues for current view.")
-
     st.subheader("Year-over-Year Correlation")
     yearly_df_sorted = yearly_df.sort_values('year')
     correlation = yearly_df_sorted['economic_score_mean'].corr(yearly_df_sorted['security_score_mean'])
@@ -1175,26 +833,6 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
         else:
             st.write("Declining security focus over time")
 
-    st.subheader("Policy action trust verdict")
-    trust_label = "Proceed with policy action"
-    trust_reason = []
-    conf_score = float(confidence_summary.get('score', 0.0))
-    audit_score = float(q_meta.get('audit_score', 0.0))
-    sig_ok = bool(stats_result and stats_result.get('significant'))
-    if exploratory_mode or conf_score < 55 or audit_score < 60 or not sig_ok:
-        trust_label = "Use as exploratory evidence only"
-    if exploratory_mode:
-        trust_reason.append("coverage below robust threshold")
-    if conf_score < 55:
-        trust_reason.append("low confidence score")
-    if audit_score < 60:
-        trust_reason.append("quality audit below 60")
-    if not sig_ok:
-        trust_reason.append("no significant paired difference")
-    st.info(f"Can we trust this shift for policy action? **{trust_label}**.")
-    if trust_reason:
-        st.caption("Reason(s): " + ", ".join(trust_reason))
-
     span_text = ""
     if year_min is not None and year_max is not None and year_max >= year_min:
         span_text = f"{year_min}–{year_max}"
@@ -1213,9 +851,6 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
         page_slug="statistical_checks",
         tables={
             "yearly_stats": yearly_df_sorted,
-            "trigger_rules": trigger_df if isinstance(trigger_df, pd_local.DataFrame) else pd_local.DataFrame(),
-            "decision_options": decision_options_df if isinstance(decision_options_df, pd_local.DataFrame) else pd_local.DataFrame(),
-            "quality_issues": q_issue_df if isinstance(q_issue_df, pd_local.DataFrame) else pd_local.DataFrame(),
         },
         run_meta=run_meta,
     )

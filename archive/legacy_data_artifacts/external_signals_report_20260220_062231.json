@@ -1,0 +1,35 @@
+{
+  "run_started_utc": "2026-02-20T06:22:05.968513+00:00",
+  "run_finished_utc": "2026-02-20T06:22:31.007064+00:00",
+  "query": "India Japan",
+  "built_query": "India Japan geopolitics diplomacy treaty bilateral summit India Japan",
+  "language": "en",
+  "timeframe_hours": 48,
+  "max_per_provider": 5,
+  "provider_counts": {
+    "newsdata": 0,
+    "newsapi": 0,
+    "worldnews": 0,
+    "gdelt": 0
+  },
+  "provider_status": {
+    "newsdata": {
+      "returned": 0,
+      "error": "missing_api_key"
+    },
+    "newsapi": {
+      "returned": 0,
+      "error": "missing_api_key"
+    },
+    "worldnews": {
+      "returned": 0,
+      "error": "missing_api_key"
+    },
+    "gdelt": {
+      "returned": 0,
+      "error": "http_429"
+    }
+  },
+  "total_items": 0,
+  "outputs": {}
+}

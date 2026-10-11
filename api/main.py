@@ -184,6 +184,7 @@ def create_app() -> FastAPI:
     async def run_evaluation():
         """Run golden dataset evaluation and return F1 metrics."""
         from evaluation.golden_dataset import GoldenDataset, F1Evaluator
+        from evaluation.binary_classifier import evaluate_binary_classifier
         pipe = _get_pipeline()
 
         gold = GoldenDataset()
@@ -191,6 +192,7 @@ def create_app() -> FastAPI:
 
         evaluator = F1Evaluator(gold.get_labels(), predictions)
         report = evaluator.full_report()
+        report["binary_ml_validation"] = evaluate_binary_classifier(gold.to_dataframe())
         return report
 
     @application.get("/api/v1/documents")

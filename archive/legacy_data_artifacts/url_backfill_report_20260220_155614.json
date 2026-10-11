@@ -1,0 +1,15 @@
+{
+  "generated_at_utc": "2026-02-20T15:56:14.231033+00:00",
+  "canonical_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\india_japan_documents_canonical.csv",
+  "reference_rows": 55,
+  "missing_url_rows": 51,
+  "candidates_generated": 51,
+  "proposed_patch_rows": 0,
+  "min_confidence": 0.92,
+  "outputs": {
+    "review_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\processed\\url_backfill_review_20260220_155614.csv",
+    "patch_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\processed\\url_backfill_patch_20260220_155614.csv",
+    "preview_canonical_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\processed\\url_backfill_preview_canonical_20260220_155614.csv",
+    "report_json": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\processed\\url_backfill_report_20260220_155614.json"
+  }
+}

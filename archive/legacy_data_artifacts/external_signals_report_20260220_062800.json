@@ -1,0 +1,40 @@
+{
+  "run_started_utc": "2026-02-20T06:27:31.334041+00:00",
+  "run_finished_utc": "2026-02-20T06:28:00.175198+00:00",
+  "query": "India Japan",
+  "built_query": {
+    "plain": "India Japan geopolitics diplomacy treaty bilateral summit India Japan",
+    "boolean": "(India Japan) AND (geopolitics OR diplomacy OR treaty OR bilateral OR summit) AND (India OR Japan)"
+  },
+  "language": "en",
+  "timeframe_hours": 48,
+  "max_per_provider": 5,
+  "provider_counts": {
+    "newsdata": 0,
+    "newsapi": 5,
+    "worldnews": 0,
+    "gdelt": 0
+  },
+  "provider_status": {
+    "newsdata": {
+      "returned": 0,
+      "error": null
+    },
+    "newsapi": {
+      "returned": 5,
+      "error": null
+    },
+    "worldnews": {
+      "returned": 0,
+      "error": null
+    },
+    "gdelt": {
+      "returned": 0,
+      "error": "unexpected_payload"
+    }
+  },
+  "total_items": 5,
+  "outputs": {
+    "signals_csv": "C:\\Users\\Sthak\\Desktop\\diplomatic_barometer\\data\\raw\\external_signals_20260220_062800.csv"
+  }
+}
