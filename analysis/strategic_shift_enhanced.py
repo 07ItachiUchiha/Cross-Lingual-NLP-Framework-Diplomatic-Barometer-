@@ -273,10 +273,14 @@ class StrategicShiftAnalyzer:
         
         for _, row in df.iterrows():
             cleaned = row.get('cleaned') if isinstance(row, dict) else row.get('cleaned', None)
-            if cleaned is None or str(cleaned).strip() == "":
-                # Fallback to lemma-join for older fixtures
-                lemmas = self.extract_lemmas_for_document(row)
-                cleaned = " ".join(str(x) for x in (lemmas or []))
+            if cleaned is None or str(cleaned).strip() == "" or str(cleaned).lower() == "nan":
+                content_val = row.get('content')
+                if content_val is not None and str(content_val).strip() != "" and str(content_val).lower() != "nan":
+                    cleaned = str(content_val)
+                else:
+                    # Fallback to lemma-join for older fixtures
+                    lemmas = self.extract_lemmas_for_document(row)
+                    cleaned = " ".join(str(x) for x in (lemmas or []))
 
             eco_count, token_total = self._count_matches_text(
                 cleaned_text=str(cleaned),
@@ -339,7 +343,7 @@ class StrategicShiftAnalyzer:
         sec_n = pd.to_numeric(dfy.get("security_score_count"), errors="coerce")
 
         if econ_n is not None and sec_n is not None:
-            eligible = (econ_n.fillna(0) >= 3) & (sec_n.fillna(0) >= 3)
+            eligible = (econ_n.fillna(0) >= 1) & (sec_n.fillna(0) >= 1)
             dfy = dfy[eligible].copy()
 
         if len(dfy) < 3:
@@ -468,13 +472,24 @@ class StrategicShiftAnalyzer:
         except Exception:
             yoy = []
         
+        sec_dir = trend_result.get('sec_direction') if trend_result else None
+        econ_dir = trend_result.get('econ_direction') if trend_result else None
+        if crossover or (sec_dir == 'Increasing' and econ_dir == 'Decreasing'):
+            trend_label = 'Shift: Economic -> Security'
+        elif sec_dir == 'Decreasing' and econ_dir == 'Increasing':
+            trend_label = 'Shift: Security -> Economic'
+        elif df_scored['security_score'].mean() > df_scored['economic_score'].mean():
+            trend_label = 'Security Dominant'
+        else:
+            trend_label = 'Economic Dominant'
+
         report: Dict = {
             'total_documents': len(df),
             'date_range': (str(df['date'].min()), str(df['date'].max())),
             'overall_economic_avg': float(df_scored['economic_score'].mean()),
             'overall_security_avg': float(df_scored['security_score'].mean()),
             'crossover_year': crossover,
-            'trend': 'SECURITY' if df_scored['security_score'].mean() > df_scored['economic_score'].mean() else 'ECONOMIC',
+            'trend': trend_label,
             'statistical_significance': stats_result,
             'trend_analysis': trend_result,
             'yearly_stats': yearly_df.to_dict('records'),
@@ -497,9 +512,12 @@ class StrategicShiftAnalyzer:
                     'total_documents': int(len(sdf)),
                     'date_range': (str(sdf['date'].min()), str(sdf['date'].max())) if 'date' in sdf.columns else (None, None),
                     'overall_economic_avg': float(pd.to_numeric(sdf['economic_score'], errors='coerce').fillna(0.0).mean()),
-                    'overall_security_avg': float(pd.to_numeric(sdf['security_score'], errors='coerce').fillna(0.0).mean()),
                     'crossover_year': self.identify_crossover_point(ydf),
-                    'trend': 'SECURITY' if float(pd.to_numeric(sdf['security_score'], errors='coerce').fillna(0.0).mean()) > float(pd.to_numeric(sdf['economic_score'], errors='coerce').fillna(0.0).mean()) else 'ECONOMIC',
+                    'trend': (
+                        'Shift: Economic → Security'
+                        if self.identify_crossover_point(ydf)
+                        else ('Security Dominant' if float(pd.to_numeric(sdf['security_score'], errors='coerce').fillna(0.0).mean()) > float(pd.to_numeric(sdf['economic_score'], errors='coerce').fillna(0.0).mean()) else 'Economic Dominant')
+                    ),
                     'yearly_stats': ydf.to_dict('records'),
                 }
             if by_source:

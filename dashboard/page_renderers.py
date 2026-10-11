@@ -271,85 +271,109 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
                 mime="text/csv",
             )
 
+    plot_ydf = yearly_df.dropna(subset=['year']).copy() if yearly_df is not None and len(yearly_df) > 0 else pd.DataFrame()
+    if len(plot_ydf) > 0:
+        plot_ydf['year'] = pd.to_numeric(plot_ydf['year'], errors='coerce').fillna(0).astype(int)
+        plot_ydf = plot_ydf[plot_ydf['year'] > 1900].sort_values('year').reset_index(drop=True)
+
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=yearly_df['year'],
-        y=yearly_df['economic_score_mean'],
-        mode='lines+markers',
-        name='Economic Focus',
-        line=dict(color='#2E86AB', width=3),
-        marker=dict(size=8),
-        hovertemplate='<b>%{x}</b><br>Economic: %{y:.4f}<br>Docs: %{customdata}<extra></extra>',
-        customdata=yearly_df.get('economic_score_count', None)
-    ))
+    if len(plot_ydf) > 0:
+        econ_counts = pd.to_numeric(plot_ydf.get('economic_score_count', pd.Series([0] * len(plot_ydf))), errors='coerce').fillna(0).astype(int)
+        sec_counts = pd.to_numeric(plot_ydf.get('security_score_count', pd.Series([0] * len(plot_ydf))), errors='coerce').fillna(0).astype(int)
 
-    if 'economic_score_std' in yearly_df.columns:
-        econ_mean = yearly_df['economic_score_mean']
-        econ_std = yearly_df['economic_score_std']
         fig.add_trace(go.Scatter(
-            x=yearly_df['year'],
-            y=(econ_mean + econ_std),
-            mode='lines',
-            line=dict(width=0),
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-        fig.add_trace(go.Scatter(
-            x=yearly_df['year'],
-            y=(econ_mean - econ_std),
-            mode='lines',
-            line=dict(width=0),
-            fill='tonexty',
-            fillcolor='rgba(46,134,171,0.12)',
-            showlegend=False,
-            hoverinfo='skip'
+            x=plot_ydf['year'],
+            y=plot_ydf['economic_score_mean'],
+            mode='lines+markers',
+            name='Economic Focus',
+            line=dict(color='#2E86AB', width=3),
+            marker=dict(size=8),
+            hovertemplate='<b>%{x}</b><br>Economic: %{y:.4f}<br>Docs: %{customdata}<extra></extra>',
+            customdata=econ_counts,
         ))
 
-    fig.add_trace(go.Scatter(
-        x=yearly_df['year'],
-        y=yearly_df['security_score_mean'],
-        mode='lines+markers',
-        name='Security Focus',
-        line=dict(color='#A23B72', width=3),
-        marker=dict(size=8),
-        hovertemplate='<b>%{x}</b><br>Security: %{y:.4f}<br>Docs: %{customdata}<extra></extra>',
-        customdata=yearly_df.get('security_score_count', None)
-    ))
+        if 'economic_score_std' in plot_ydf.columns:
+            econ_mean = plot_ydf['economic_score_mean']
+            econ_std = plot_ydf['economic_score_std'].fillna(0.0)
+            fig.add_trace(go.Scatter(
+                x=plot_ydf['year'],
+                y=(econ_mean + econ_std),
+                mode='lines',
+                line=dict(width=0),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+            fig.add_trace(go.Scatter(
+                x=plot_ydf['year'],
+                y=(econ_mean - econ_std).clip(lower=0),
+                mode='lines',
+                line=dict(width=0),
+                fill='tonexty',
+                fillcolor='rgba(46,134,171,0.12)',
+                showlegend=False,
+                hoverinfo='skip'
+            ))
 
-    if 'security_score_std' in yearly_df.columns:
-        sec_mean = yearly_df['security_score_mean']
-        sec_std = yearly_df['security_score_std']
         fig.add_trace(go.Scatter(
-            x=yearly_df['year'],
-            y=(sec_mean + sec_std),
-            mode='lines',
-            line=dict(width=0),
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-        fig.add_trace(go.Scatter(
-            x=yearly_df['year'],
-            y=(sec_mean - sec_std),
-            mode='lines',
-            line=dict(width=0),
-            fill='tonexty',
-            fillcolor='rgba(162,59,114,0.12)',
-            showlegend=False,
-            hoverinfo='skip'
+            x=plot_ydf['year'],
+            y=plot_ydf['security_score_mean'],
+            mode='lines+markers',
+            name='Security Focus',
+            line=dict(color='#A23B72', width=3),
+            marker=dict(size=8),
+            hovertemplate='<b>%{x}</b><br>Security: %{y:.4f}<br>Docs: %{customdata}<extra></extra>',
+            customdata=sec_counts,
         ))
 
-    fig.update_layout(
-        title="Diplomatic Focus Signals Over Time (Lexicon-based)",
-        xaxis_title="Year",
-        yaxis_title="Normalized Focus Score",
-        hovermode='x unified',
-        height=500,
-        template='plotly_white',
-        font=dict(size=12)
-    )
+        if 'security_score_std' in plot_ydf.columns:
+            sec_mean = plot_ydf['security_score_mean']
+            sec_std = plot_ydf['security_score_std'].fillna(0.0)
+            fig.add_trace(go.Scatter(
+                x=plot_ydf['year'],
+                y=(sec_mean + sec_std),
+                mode='lines',
+                line=dict(width=0),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+            fig.add_trace(go.Scatter(
+                x=plot_ydf['year'],
+                y=(sec_mean - sec_std).clip(lower=0),
+                mode='lines',
+                line=dict(width=0),
+                fill='tonexty',
+                fillcolor='rgba(162,59,114,0.12)',
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+
+        crossover_val = report.get('crossover_year') if isinstance(report, dict) else None
+        if crossover_val and str(crossover_val).isdigit():
+            cx_yr = int(crossover_val)
+            if plot_ydf['year'].min() <= cx_yr <= plot_ydf['year'].max():
+                fig.add_vline(
+                    x=cx_yr,
+                    line_dash="dash",
+                    line_color="#e67e22",
+                    line_width=2,
+                    annotation_text=f"Crossover ({cx_yr})",
+                    annotation_position="top left",
+                    annotation_font=dict(size=11, color="#d35400"),
+                )
+
+        fig.update_layout(
+            title="Diplomatic Focus Signals Over Time (Lexicon-based)",
+            xaxis_title="Year",
+            yaxis_title="Normalized Focus Score",
+            xaxis=dict(tickmode='linear', dtick=2, tickformat='d'),
+            hovermode='x unified',
+            height=500,
+            template='plotly_white',
+            font=dict(size=12)
+        )
 
     st.plotly_chart(fig, width='stretch')
-    render_data_basis_caption(run_meta, "Strategic shift trend", point_count=len(yearly_df))
+    render_data_basis_caption(run_meta, "Strategic shift trend", point_count=len(plot_ydf))
 
     if isinstance(report, dict) and report.get('by_source'):
         with st.expander("View per-source summary (MEA vs MOFA)"):
@@ -518,8 +542,9 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
                 grouped = (
                     trend_df.groupby(["year", "issue_grouped"], as_index=False)["documents"]
                     .sum()
-                    .sort_values(["year", "documents"], ascending=[True, False])
                 )
+                grouped["year"] = pd.to_numeric(grouped["year"], errors="coerce").fillna(0).astype(int)
+                grouped = grouped[grouped["year"] > 1900].sort_values(["year", "documents"], ascending=[True, False]).reset_index(drop=True)
 
                 adequacy = _compute_chart_adequacy(grouped, "year", "documents", min_years=4, min_points=10, min_variance=1e-3)
                 st.caption("Data adequacy — Issue trends")
@@ -533,21 +558,24 @@ def render_overview_page(ctx: Dict[str, Any]) -> None:
                 with a4:
                     st.metric("Variance", f"{float(adequacy.get('variance', 0.0)):.4f}")
 
-                if adequacy.get("low_info", False):
+                if adequacy.get("reasons"):
                     reasons = ", ".join(adequacy.get("reasons", []))
-                    st.info(f"Fallback: Issue trend chart hidden due to low-information signal ({reasons}).")
-                    fallback = grouped.groupby("issue_grouped", as_index=False)["documents"].sum().sort_values("documents", ascending=False)
-                    st.dataframe(fallback, width='stretch', hide_index=True)
-                else:
-                    fig_issue_trend = px.line(
-                        grouped,
-                        x="year",
-                        y="documents",
-                        color="issue_grouped",
-                        title="Issue tag trends over time (Top issues + Other)",
-                        markers=True,
-                    )
-                    st.plotly_chart(fig_issue_trend, width='stretch')
+                    st.caption(f"Issue trend context ({reasons}).")
+
+                fig_issue_trend = px.line(
+                    grouped,
+                    x="year",
+                    y="documents",
+                    color="issue_grouped",
+                    title="Issue tag trends over time (Top issues + Other)",
+                    markers=True,
+                )
+                fig_issue_trend.update_layout(
+                    xaxis=dict(tickmode='linear', dtick=2, tickformat='d'),
+                    template='plotly_white',
+                    height=450,
+                )
+                st.plotly_chart(fig_issue_trend, width='stretch')
             else:
                 st.info("Fallback: Issue trend visual unavailable because trend rows are empty after cleaning.")
     else:
@@ -780,8 +808,12 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
             st.info("No traceability records available.")
 
     st.subheader("Year-over-Year Correlation")
-    yearly_df_sorted = yearly_df.sort_values('year')
-    correlation = yearly_df_sorted['economic_score_mean'].corr(yearly_df_sorted['security_score_mean'])
+    yearly_df_sorted = yearly_df.dropna(subset=['year']).copy() if yearly_df is not None and len(yearly_df) > 0 else pd_local.DataFrame()
+    if len(yearly_df_sorted) > 0:
+        yearly_df_sorted['year'] = pd_local.to_numeric(yearly_df_sorted['year'], errors='coerce').fillna(0).astype(int)
+        yearly_df_sorted = yearly_df_sorted[yearly_df_sorted['year'] > 1900].sort_values('year').reset_index(drop=True)
+
+    correlation = yearly_df_sorted['economic_score_mean'].corr(yearly_df_sorted['security_score_mean']) if len(yearly_df_sorted) > 1 else 0.0
     st.metric("Correlation (Economic vs Security)", f"{correlation:.4f}")
 
     if len(yearly_df_sorted) < 5:
@@ -795,9 +827,9 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
         st.info("Weak correlation (no strong relationship detected)")
 
     st.subheader("Trend Analysis (Linear Regression)")
-    X = yearly_df_sorted[['year']].values
-    y_econ = yearly_df_sorted['economic_score_mean'].values
-    y_sec = yearly_df_sorted['security_score_mean'].values
+    X = yearly_df_sorted[['year']].values if len(yearly_df_sorted) > 0 else []
+    y_econ = yearly_df_sorted['economic_score_mean'].values if len(yearly_df_sorted) > 0 else []
+    y_sec = yearly_df_sorted['security_score_mean'].values if len(yearly_df_sorted) > 0 else []
 
     year_span = float(X[-1][0] - X[0][0]) if len(X) >= 2 else 0.0
     if year_span <= 0 or len(y_econ) < 2 or len(y_sec) < 2:
@@ -806,6 +838,8 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
         st.warning("Trend estimation needs at least two distinct years; trend values shown as 0.0.")
         econ_p = None
         sec_p = None
+        econ_fit = None
+        sec_fit = None
     else:
         econ_fit = stats_local.linregress(yearly_df_sorted['year'].astype(float), yearly_df_sorted['economic_score_mean'].astype(float))
         sec_fit = stats_local.linregress(yearly_df_sorted['year'].astype(float), yearly_df_sorted['security_score_mean'].astype(float))
@@ -832,6 +866,55 @@ def render_stats_page(ctx: Dict[str, Any]) -> None:
             st.write("Rising security focus over time")
         else:
             st.write("Declining security focus over time")
+
+    if len(yearly_df_sorted) >= 2 and econ_fit is not None and sec_fit is not None:
+        fig_reg = go.Figure()
+        fig_reg.add_trace(go.Scatter(
+            x=yearly_df_sorted['year'],
+            y=yearly_df_sorted['economic_score_mean'],
+            mode='markers',
+            name='Economic (Actual)',
+            marker=dict(color='#2E86AB', size=8),
+            hovertemplate='<b>%{x}</b><br>Economic Score: %{y:.4f}<extra></extra>',
+        ))
+        econ_pred = econ_fit.intercept + econ_fit.slope * yearly_df_sorted['year'].astype(float)
+        fig_reg.add_trace(go.Scatter(
+            x=yearly_df_sorted['year'],
+            y=econ_pred,
+            mode='lines',
+            name=f'Economic Fit ({econ_slope:+.4f}/yr)',
+            line=dict(color='#2E86AB', dash='dash', width=2),
+            hoverinfo='skip',
+        ))
+
+        fig_reg.add_trace(go.Scatter(
+            x=yearly_df_sorted['year'],
+            y=yearly_df_sorted['security_score_mean'],
+            mode='markers',
+            name='Security (Actual)',
+            marker=dict(color='#A23B72', size=8),
+            hovertemplate='<b>%{x}</b><br>Security Score: %{y:.4f}<extra></extra>',
+        ))
+        sec_pred = sec_fit.intercept + sec_fit.slope * yearly_df_sorted['year'].astype(float)
+        fig_reg.add_trace(go.Scatter(
+            x=yearly_df_sorted['year'],
+            y=sec_pred,
+            mode='lines',
+            name=f'Security Fit ({sec_slope:+.4f}/yr)',
+            line=dict(color='#A23B72', dash='dash', width=2),
+            hoverinfo='skip',
+        ))
+
+        fig_reg.update_layout(
+            title="Linear Trend Regression Fits (Economic vs Security Focus)",
+            xaxis_title="Year",
+            yaxis_title="Normalized Focus Score",
+            xaxis=dict(tickmode='linear', dtick=2, tickformat='d'),
+            hovermode='x unified',
+            height=450,
+            template='plotly_white',
+        )
+        st.plotly_chart(fig_reg, width='stretch')
 
     span_text = ""
     if year_min is not None and year_max is not None and year_max >= year_min:
